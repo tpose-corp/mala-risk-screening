@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  :root{
+    --ink:#1C1C1C; --ink-2:#4A4A4A; --muted:#8A8A8A;
+    --bg:#F9F9F9; --card:#FFFFFF; --line:#E3E3E3;
+    --accent:#990066; --accent-dark:#7A0052; --accent-soft:#F3E3EC;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Sarabun","Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}
+  a{color:var(--accent)} a:hover{color:var(--accent-dark)}
+  input,select{font-family:inherit}
+</style>
+</helmet>
+<div style="width:1280px;height:800px;display:flex;overflow:hidden;background:var(--card)">
+  <div style="width:460px;height:100%;background:var(--accent-dark);color:white;display:flex;flex-direction:column;justify-content:space-between;padding:48px 40px;flex-shrink:0">
+    <div style="display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <span style="font-size:13px;letter-spacing:.1em;text-transform:uppercase;opacity:.85">เครือข่ายบริการปฐมภูมิ</span>
+      </div>
+      <div>
+        <div style="font-size:36px;font-weight:700;line-height:1.28">ระบบคัดกรอง<br>ความเสี่ยง MALA</div>
+        <div style="margin-top:14px;font-size:15.5px;line-height:1.75;opacity:.88;max-width:340px">สำหรับบุคลากรทางการแพทย์ในหน่วยบริการปฐมภูมิ เครือข่ายโรงพยาบาลเชียงรายประชานุเคราะห์ — ประเมินความเสี่ยง ส่งต่อรวดเร็ว มาตรฐานเดียวกัน</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;opacity:.75;border-top:1px solid rgba(255,255,255,.22);padding-top:18px">
+      <div>Metformin-Associated Lactic Acidosis Risk Screening</div>
+      <div>ศูนย์ข้อมูลยา · โรงพยาบาลเชียงรายประชานุเคราะห์</div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px">
+    <div style="width:360px;display:flex;flex-direction:column;gap:20px">
+      <div>
+        <div style="font-size:22px;font-weight:700">เข้าสู่ระบบ</div>
+        <div style="margin-top:6px;font-size:14px;color:var(--muted)">กรอกข้อมูลเพื่อเข้าใช้งานระบบคัดกรอง</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:13px;color:var(--ink-2);font-weight:600">หน่วยบริการ</label>
+        <select style="height:44px;border:1px solid var(--line);border-radius:8px;padding:0 12px;font-size:14px;color:var(--ink);background:white">
+          <option>รพ.สต.บ้านดู่</option>
+          <option>รพ.สต.นางแล</option>
+          <option>ศูนย์สุขภาพชุมชนเมืองเชียงรายฝั่งหมิ่น</option>
+          <option>ศูนย์สุขภาพชุมชนเมืองเชียงรายฝั่งเจียง</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:13px;color:var(--ink-2);font-weight:600">บทบาทผู้ใช้งาน</label>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;height:40px;border:1.5px solid var(--accent);background:var(--accent-soft);color:var(--accent-dark);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">พยาบาล</div>
+          <div style="flex:1;height:40px;border:1px solid var(--line);color:var(--muted);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px">เภสัชกร</div>
+          <div style="flex:1;height:40px;border:1px solid var(--line);color:var(--muted);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px">แพทย์</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:13px;color:var(--ink-2);font-weight:600">ชื่อผู้ใช้งาน</label>
+        <input value="somsri.n" style="height:44px;border:1px solid var(--line);border-radius:8px;padding:0 12px;font-size:14px"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:13px;color:var(--ink-2);font-weight:600">รหัสผ่าน</label>
+        <input type="password" value="********" style="height:44px;border:1px solid var(--line);border-radius:8px;padding:0 12px;font-size:14px"/>
+      </div>
+      <button style="height:46px;background:var(--accent-dark);color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">เข้าสู่ระบบ</button>
+      <div style="font-size:11.5px;color:var(--muted);text-align:center;line-height:1.6">ระบบบันทึกการเข้าใช้งานทุกครั้ง (ผู้ใช้ เวลา หน่วยบริการ) ตามพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์ มาตรา 26</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

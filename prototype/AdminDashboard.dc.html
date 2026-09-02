@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  :root{
+    --ink:#1C1C1C; --ink-2:#4A4A4A; --muted:#8A8A8A;
+    --bg:#F9F9F9; --card:#FFFFFF; --line:#E3E3E3;
+    --accent:#990066; --accent-dark:#7A0052; --accent-soft:#F3E3EC;
+    --low:oklch(56% 0.14 150); --low-soft:oklch(94% 0.05 150);
+    --high:oklch(54% 0.19 25);
+    --muted-soft:#F1F1F1;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Sarabun","Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}
+  a{color:var(--accent)} a:hover{color:var(--accent-dark)}
+</style>
+</helmet>
+<div style="width:1280px;height:800px;overflow:hidden;display:flex;flex-direction:column;background:var(--bg)">
+  <div style="height:64px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7A0052" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span style="font-weight:700;font-size:15px">MALA Risk Screening</span>
+      <span style="color:var(--line);margin:0 4px">/</span>
+      <span style="color:var(--muted);font-size:14px">ภาพรวมเครือข่าย</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent-dark);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700">อว</div>
+      <div><div style="font-size:12.5px;font-weight:700">อรวรรณ สุขใจ</div><div style="font-size:11px;color:var(--muted)">ผู้ดูแลระบบ · รพ.เชียงรายประชานุเคราะห์</div></div>
+    </div>
+  </div>
+
+  <div style="flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:20px;overflow:hidden">
+    <div>
+      <div style="font-size:21px;font-weight:700">ภาพรวมการคัดกรองความเสี่ยง MALA</div>
+      <div style="margin-top:4px;font-size:13.5px;color:var(--muted)">เครือข่ายหน่วยบริการปฐมภูมิ อำเภอเมือง จังหวัดเชียงราย · เดือนสิงหาคม 2569</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px">
+        <div style="font-size:12.5px;color:var(--muted);font-weight:600">อัตราการคัดกรองผู้ป่วยเดือนนี้</div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:8px">
+          <div style="font-size:34px;font-weight:700;color:var(--low)">82%</div>
+          <div style="font-size:12px;color:var(--muted)">เป้าหมาย ≥ 80%</div>
+        </div>
+        <div style="height:6px;background:var(--muted-soft);border-radius:4px;margin-top:10px;overflow:hidden"><div style="width:82%;height:100%;background:var(--low)"></div></div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px">
+        <div style="font-size:12.5px;color:var(--muted);font-weight:600">ผู้ป่วยความเสี่ยงสูงที่พบ</div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:8px">
+          <div style="font-size:34px;font-weight:700;color:var(--high)">14</div>
+          <div style="font-size:12px;color:var(--muted)">ราย เดือนนี้</div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--muted)">จากผู้ป่วยที่คัดกรองแล้ว 236 ราย</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px">
+        <div style="font-size:12.5px;color:var(--muted);font-weight:600">อัตราการส่งต่อสำเร็จ</div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:8px">
+          <div style="font-size:34px;font-weight:700;color:var(--accent-dark)">92%</div>
+          <div style="font-size:12px;color:var(--muted)">ภายใน 48 ชม.</div>
+        </div>
+        <div style="height:6px;background:var(--muted-soft);border-radius:4px;margin-top:10px;overflow:hidden"><div style="width:92%;height:100%;background:var(--accent-dark)"></div></div>
+      </div>
+    </div>
+
+    <div style="flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="padding:14px 20px;border-bottom:1px solid var(--line);font-size:14px;font-weight:700">ความครอบคลุมรายหน่วยบริการ</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1.4fr;padding:10px 20px;font-size:12px;font-weight:700;color:var(--muted);background:var(--muted-soft)">
+        <div>หน่วยบริการ</div><div>เป้าหมาย</div><div>คัดกรองแล้ว</div><div>ความครอบคลุม</div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1.4fr;align-items:center;padding:13px 20px;border-bottom:1px solid var(--line);font-size:13.5px">
+        <div style="font-weight:600">รพ.สต.บ้านดู่</div><div style="color:var(--ink-2)">96</div><div style="color:var(--ink-2)">88</div>
+        <div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;background:var(--muted-soft);border-radius:4px;overflow:hidden"><div style="width:92%;height:100%;background:var(--low)"></div></div><span style="font-size:12px;color:var(--low);font-weight:700">92%</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1.4fr;align-items:center;padding:13px 20px;border-bottom:1px solid var(--line);font-size:13.5px">
+        <div style="font-weight:600">รพ.สต.นางแล</div><div style="color:var(--ink-2)">74</div><div style="color:var(--ink-2)">61</div>
+        <div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;background:var(--muted-soft);border-radius:4px;overflow:hidden"><div style="width:82%;height:100%;background:var(--low)"></div></div><span style="font-size:12px;color:var(--low);font-weight:700">82%</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1.4fr;align-items:center;padding:13px 20px;border-bottom:1px solid var(--line);font-size:13.5px">
+        <div style="font-weight:600">ศูนย์สุขภาพชุมชนเมืองเชียงรายฝั่งหมิ่น</div><div style="color:var(--ink-2)">142</div><div style="color:var(--ink-2)">99</div>
+        <div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;background:var(--muted-soft);border-radius:4px;overflow:hidden"><div style="width:70%;height:100%;background:oklch(72% 0.15 80)"></div></div><span style="font-size:12px;color:oklch(60% 0.15 80);font-weight:700">70%</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1.4fr;align-items:center;padding:13px 20px;font-size:13.5px">
+        <div style="font-weight:600">ศูนย์สุขภาพชุมชนเมืองเชียงรายฝั่งเจียง</div><div style="color:var(--ink-2)">88</div><div style="color:var(--ink-2)">78</div>
+        <div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;background:var(--muted-soft);border-radius:4px;overflow:hidden"><div style="width:89%;height:100%;background:var(--low)"></div></div><span style="font-size:12px;color:var(--low);font-weight:700">89%</span></div>
+      </div>
+    </div>
+
+    <div style="font-size:11.5px;color:var(--muted)">การเข้าถึงข้อมูลผู้ป่วยและการดำเนินการทุกครั้งถูกบันทึกเป็น audit log เก็บไว้อย่างน้อย 90 วัน ตามพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์ มาตรา 26</div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

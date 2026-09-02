@@ -1,0 +1,19 @@
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Dependencies / build output (uncomment/extend once the app stack is chosen)
+node_modules/
+dist/
+build/
+.env
+.env.local
+
+# Logs
+*.log
