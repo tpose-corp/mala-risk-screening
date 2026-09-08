@@ -1,79 +1,80 @@
 # MALA Risk Screening
 
-**T-POSE Corp** · วิชา 1305493 Software Engineering Case Studies, 1/2569 (ADT, Mae Fah Luang University)
-โปรเจกต์จริงร่วมกับ **งานบริการเภสัชกรรมปฐมภูมิ โรงพยาบาลเชียงรายประชานุเคราะห์**
+**T-POSE Corp** · Course 1305493 Software Engineering Case Studies, 1/2569 (ADT, Mae Fah Luang University)
+Real-world project with the **Primary Care Pharmacy Service, Chiang Rai Prachanukroh Hospital**
 
-> รายละเอียดเต็มอยู่ในไฟล์ที่ลิงก์ไว้แต่ละหัวข้อ
+> Full detail lives in the file linked under each section.
 
 ---
 
-## ปัญหาคืออะไร
+## What's the problem
 
-**Metformin-Associated Lactic Acidosis (MALA)** คือภาวะแทรกซ้อนที่พบไม่บ่อยแต่รุนแรงและมีอัตราตายสูง (30–50%) เกิดจากยา Metformin (ยาลดน้ำตาลที่ใช้แพร่หลายในผู้ป่วยเบาหวานชนิดที่ 2) สะสมในกระแสเลือดเมื่อไตทำงานลดลง ร่วมกับปัจจัยกระตุ้น เช่น ภาวะขาดน้ำ ไตวายเฉียบพลัน (AKI) หรือโรคเรื้อรังกำเริบฉับพลัน
+**Metformin-Associated Lactic Acidosis (MALA)** is an uncommon but severe complication with a high mortality rate (30–50%), caused by Metformin (a widely used blood-sugar medication for type-2 diabetics) building up in the bloodstream when kidney function declines, combined with triggering factors such as dehydration, acute kidney injury (AKI), or an acute flare of a chronic disease.
 
-จากการทบทวนเคสผู้ป่วยในอำเภอเมือง จ.เชียงราย (ปีงบ 2566–2568) พบว่า **58% ของผู้ป่วยที่เกิด MALA รับยา Metformin จากหน่วยบริการปฐมภูมิ** (รพ.สต. / ศูนย์สุขภาพชุมชนเมือง) ซึ่งเป็นจุดที่:
-- **ไม่มีเครื่องมือคัดกรองความเสี่ยงมาตรฐาน**
-- **เจ้าหน้าที่หน้างานมักไม่มีความรู้ทางคลินิกเทียบเท่าแพทย์/พยาบาลวิชาชีพ** (ยืนยันจากสัมภาษณ์ผู้ใช้จริง)
+A review of patient cases in Mueang District, Chiang Rai (FY2023–2025) found that **58% of patients who developed MALA received their Metformin from a primary-care unit** (รพ.สต. / urban health centers) — a point where:
+- **There is no standard risk-screening tool**
+- **Front-line staff usually don't have clinical knowledge equal to a doctor/professional nurse** (confirmed from a real-user interview)
 
-ผลคือต้องอาศัยดุลยพินิจส่วนบุคคลว่าเคสไหน "เสี่ยง" — ผู้ป่วยกลุ่มเสี่ยงสูงบางรายจึงไม่ถูกคัดกรอง/ส่งต่อทันเวลา ก่อนอาการลุกลามเป็น MALA ที่มีอัตราตายสูง
+The result is that deciding which case is "risky" relies on individual judgement — some high-risk patients aren't screened/referred in time, before their condition progresses into the high-mortality MALA.
 
-รายละเอียดเต็ม (ที่มาของโรค, ปัญหาที่สัมภาษณ์ได้จากหน้างานจริง) → [`.docs/01-requirements/backlog.md`](.docs/01-requirements/backlog.md#ภาพรวมปัญหา--จากสัมภาษณ์-int-01-พี่พยาบาล--doc-01-เอกสารโครงการต้นฉบับ)
+Full detail (where the disease comes from, problems learned from real front-line interviews) → [`.docs/01-requirements/backlog.md`](.docs/01-requirements/backlog.md#problem-overview-from-int-01-and-doc-01)
 
-## เราจะสร้างอะไร (Proposed outcome)
+## What we're building (Proposed outcome)
 
-เว็บแอปคัดกรองความเสี่ยง MALA ให้เจ้าหน้าที่หน้างานปฐมภูมิ (ที่อาจไม่มีความรู้คลินิกลึก) กรอกข้อมูลผู้ป่วยผ่านฟอร์มแบบนำทางทีละขั้น ระบบประมวลผลออกมาเป็น **3 ระดับ** (รุนแรง/ฉุกเฉิน · รุนแรง/เข้าเคส · ปลอดภัย) หากเข้าเกณฑ์รุนแรง/ฉุกเฉิน จะแจ้งเตือนโรงพยาบาลแม่ข่ายผ่านแอปทันที และเจ้าหน้าที่หน้างาน**ปฏิบัติตามคำแนะนำที่แพทย์ส่งกลับเท่านั้น** — ระบบและเจ้าหน้าที่หน้างานไม่ตัดสินใจแนวทางรักษาแทนแพทย์
+A web app for screening MALA risk, for primary-care front-line staff (who may not have deep clinical knowledge) to fill in patient data through the real 13-item form the hospital provided (eGFR, weight/height, Metformin dose, alcohol history, vomiting/diarrhea, reduced intake, NSAIDs, herbal/supplements). A deterministic rule engine checks the Metformin dose against eGFR, computes a MALA risk score, and flags Sick Day Rule triggers — the result is **binary**, not a named tier: it either **alerts** or it doesn't. On an alert, the system notifies the referral hospital immediately, through the app **and** a LINE group at once, and **the doctor/nurse at the hospital takes over caring for the patient themselves** (not send advice back for front-line staff to carry out). Otherwise, the system generates advice (AI-assisted) from whichever flags are active, and front-line staff delivers it to the patient **immediately** — no doctor involved, no waiting. In every case, the data is always sent to the hospital to keep for analysis. Neither the system nor front-line staff decide the treatment approach in place of a doctor.
 
-**MVP (ล็อกตาม roadmap W6):** Login → ค้นหาผู้ป่วย → กรอกฟอร์มคัดกรอง → ผลประเมิน (3 ระดับ) → แจ้งเตือน/ยืนยัน
-**นอก MVP (stretch):** AdminDashboard, เชื่อมต่อ HOSxP/HIS อัตโนมัติ
+**MVP (3 core capabilities, locked per roadmap W6):**
+1. Screen the patient — Login → search patient → fill the real screening form → run the rule engine → show the result
+2. Send every case's data to the hospital to keep for analysis
+3. Alert the hospital (app + LINE) on an alert case, or generate instant advice on a no-alert case
 
-### กลุ่มผู้ใช้
+**Out of MVP (stretch):** an AI chatbot (real pain source now — still unclear if staff- or patient-facing), AdminDashboard, automatic HOSxP/HIS integration
 
-| กลุ่ม | บทบาท |
+### User groups
+
+| Group | Role |
 |---|---|
-| ผู้ใช้งานหลัก | เจ้าหน้าที่ รพ.สต. / ศูนย์สุขภาพชุมชนขนาดเล็ก — ผู้กรอกฟอร์มคัดกรอง |
-| ผู้รับการแจ้งเตือน | แพทย์/บุคลากรที่โรงพยาบาลแม่ข่าย — ให้คำแนะนำกลับผ่านแอป |
-| ผู้รับบริการ (ข้อมูลในระบบ) | ผู้ป่วยเบาหวานชนิดที่ 2 ที่รับยา Metformin ในหน่วยปฐมภูมิ (ข้อมูลอ่อนไหวตาม PDPA) |
+| Primary user | รพ.สต. staff / small health-center staff — fills in the screening form |
+| Recipient of the alert | Doctor/staff at the referral hospital, reached via the app **and** LINE at once — takes over the patient directly on an alert; no advice sent back |
+| Data subject (data in the system) | Type-2 diabetic patients on Metformin at a primary-care unit (sensitive data under PDPA) |
 
-## โครงสร้าง repo — หาอะไรได้ที่ไหน
+## Repo structure — where to find things
 
-| ต้องการอะไร | ไปที่ไฟล์ |
+| What you need | Go to |
 |---|---|
-| Problem, scope, constraints, KPI, open questions ที่ยังรอพี่ตอบ | [`intent.md`](intent.md) |
-| ข้อบังคับกฎหมาย (PDPA, พรบ.คอมพิวเตอร์ §26, พรบ.ธุรกรรมอิเล็กทรอนิกส์ §9/26/28) | [`rule.md`](rule.md) |
-| บทบาทหน้าที่แต่ละคนในทีม | [`document/Roles.txt`](document/Roles.txt) |
-| เอกสารโครงการต้นฉบับจากโรงพยาบาล | `document/โครงการ MALA screening - ศูนย์ข้อมูลยา รพศ ชร.docx` |
-| หน้าจอ prototype (Claude Design canvas, ยังเป็น guess รอทดสอบผู้ใช้จริง) | [`prototype/`](prototype/) |
-| Deliverable สำหรับ W5 User Validation Gate (proposal, backlog, design draft, compliance) | [`.docs/README.md`](.docs/README.md) |
-| แผนงานทั้งโปรเจกต์ 4 เดือน (DISCOVER→BUILD→TEST→DELIVER) | `roadmap.md` (อยู่นอก repo นี้ — working plan ภายในทีม ไม่ใช่ deliverable ที่ส่งพี่) |
+| Problem, scope, constraints, KPIs, open questions still awaiting an answer from the hospital contact | [`intent.md`](intent.md) |
+| Legal requirements (PDPA, Computer Crime Act §26, Electronic Transactions Act §9/26/28) | [`.docs/03-compliance/rule.md`](.docs/03-compliance/rule.md) |
+| Original project document from the hospital | `.docs/01-requirements/โครงการ MALA screening - ศูนย์ข้อมูลยา รพศ ชร.docx` |
+| Prototype screens (Claude Design canvas, real 13-item form + binary alert model, still pending real-user testing) | [`.docs/02-design/prototype-v2/`](.docs/02-design/prototype-v2/) |
+| Deliverables for the W5 User Validation Gate (proposal, backlog, design draft, compliance) | [`.docs/README.md`](.docs/README.md) |
+| Whole-project 4-month plan (DISCOVER→BUILD→TEST→DELIVER) | `roadmap.md` (outside this repo — an internal team working plan, not a deliverable sent to the hospital contact) |
 
-## Workflow ภาพรวม (4 เดือน, ตาม roadmap วิชา)
+## Workflow overview (4 months, per the course roadmap)
 
 ```
-DISCOVER (W1–5)   พิสูจน์ว่าปัญหาจริง + requirement มาจากคนจริง
-   ↓  Gate: ผู้ใช้จริง ≥5 คน (เป้ารวม ≥15), 4 diagrams, ทุก requirement โยงกลับ pain จริง
-BUILD (W6–8)      ล็อก scope 1 core workflow แล้วพัฒนาให้ end-to-end ใช้งานได้จริงทัน Alpha Demo
+DISCOVER (W1–5)   Prove the problem is real and requirements come from real people
+   ↓  Gate: ≥5 real users (target ≥15 total), 4 diagrams, every requirement traced back to a real pain point
+BUILD (W6–8)      Lock the scope to 1 core workflow and build it end-to-end working, ready for the Alpha Demo
    ↓
-TEST (W9–11)      UAT กับผู้ใช้จริง ≥10 sessions, วัด metric ก่อน/หลัง, แก้ ≥3 จุดจาก feedback จริง
+TEST (W9–11)      UAT with real users, ≥10 sessions, measure before/after metrics, fix ≥3 items from real feedback
    ↓
-DELIVER (W12–14)  เดโมให้ผู้ใช้จริง + ทีมแพทย์ดู, Final Presentation, Portfolio
+DELIVER (W12–14)  Demo to real users + the medical team, Final Presentation, Portfolio
 ```
 
-**สถานะปัจจุบัน:** อยู่ใน **DISCOVER**, ใกล้ W5 User Validation Gate (9 ก.ย. 2569) — เอกสารทั้ง 4 อย่างที่ Gate ต้องการมีครบแล้ว แต่จำนวนผู้ใช้จริงที่สัมภาษณ์ยังไม่ถึงเกณฑ์ ดูสถานะล่าสุดใน [`.docs/README.md`](.docs/README.md)
+**Current status:** in **DISCOVER**, approaching the W5 User Validation Gate (Sep 9, 2026) — all 4 documents the Gate requires are complete, but the number of real users interviewed hasn't reached the threshold yet. See the latest status in [`.docs/README.md`](.docs/README.md)
 
-## Guardrails ที่ต้องยึดตลอดโปรเจกต์
+## Guardrails to hold throughout the project
 
-- **ผู้ใช้จริงเท่านั้น** — ห้ามใช้เพื่อนร่วมชั้นหรือ persona สมมติแทนผู้ใช้จริง ไม่ว่าจะขาดคนแค่ไหน
-- **เกณฑ์คลินิก (risk factors, threshold, จำนวนระดับผล) ต้องมาจากพี่/ทีมแพทย์เท่านั้น** — ห้ามทีมพัฒนาหรือ AI คิดเอาเอง (ดู open questions ใน `intent.md`)
-- **ทุก requirement ต้องโยงกลับ pain source จริง** (สัมภาษณ์ หรือเคสจริงจาก docx) — ถ้ายังไม่มีแหล่งอ้างอิงจริง ให้ mark `UNVERIFIED`/`BLOCKED` ห้ามใช้ตอบ Gate
-- **งบ 0 บาท** — ใช้เครื่องมือ/แพลตฟอร์มฟรี/โอเพนซอร์สเท่านั้น
-- **PDPA-safe เสมอ** — ห้ามใช้ข้อมูลผู้ป่วยจริงตอน dev/demo ใช้ synthetic data (ดู `rule.md`)
-- **ระบบห้ามตัดสินใจทางคลินิกแทนแพทย์** — ต้องมีแพทย์เป็นผู้ตัดสินใจสุดท้ายเสมอ
+- **Real users only** — never substitute classmates or a made-up persona for a real user, no matter how short-handed
+- **Clinical criteria (risk factors, thresholds, number of result tiers) must come only from the hospital contact/medical team** — the dev team or an AI must never invent them (see open questions in `intent.md`)
+- **Every requirement must trace back to a real pain source** (an interview, or a real case from the docx) — if there's no real source yet, mark it `UNVERIFIED`/`BLOCKED` and don't use it to answer the Gate
+- **฿0 budget** — free/open-source tools and platforms only
+- **Always PDPA-safe** — never use real patient data during dev/demo; use synthetic data (see `.docs/03-compliance/rule.md`)
+- **The system must never make clinical decisions in place of a doctor** — a doctor must always make the final call
 
-## ทีม
+## Team
 
-ดูรายละเอียดหน้าที่เต็มใน [`document/Roles.txt`](document/Roles.txt)
-
-| บทบาท | ผู้รับผิดชอบ |
+| Role | Owner |
 |---|---|
 | Product Owner | Sutapant Chucham |
 | Tech Lead | Sorrawit Thanakhwang |

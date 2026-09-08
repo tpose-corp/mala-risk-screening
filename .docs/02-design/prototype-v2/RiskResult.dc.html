@@ -1,0 +1,156 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  :root{
+    --ink:#1C1C1C; --ink-2:#4A4A4A; --muted:#8A8A8A;
+    --bg:#F9F9F9; --card:#FFFFFF; --line:#E3E3E3;
+    --accent:#990066; --accent-dark:#7A0052; --accent-soft:#F3E3EC;
+    --muted-soft:#F1F1F1;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Sarabun","Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}
+  a{color:var(--accent)} a:hover{color:var(--accent-dark)}
+</style>
+</helmet>
+<div style="width:1280px;height:800px;overflow:hidden;display:flex;flex-direction:column;background:var(--bg)">
+  <div style="height:64px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7A0052" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span style="font-weight:700;font-size:15px">MALA Risk Screening</span>
+      <span style="color:var(--line);margin:0 4px">/</span>
+      <span style="color:var(--muted);font-size:14px">รพ.สต.บ้านดู่</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px">
+      <div style="display:flex;gap:6px">
+        <div style="height:30px;padding:0 14px;background:var(--muted-soft);color:var(--muted);border-radius:15px;display:flex;align-items:center;font-size:12.5px">1 ค้นหาผู้ป่วย</div>
+        <div style="height:30px;padding:0 14px;background:var(--muted-soft);color:var(--muted);border-radius:15px;display:flex;align-items:center;font-size:12.5px">2 กรอกข้อมูล</div>
+        <div style="height:30px;padding:0 14px;background:var(--accent-dark);color:white;border-radius:15px;display:flex;align-items:center;font-size:12.5px;font-weight:700">3 ผลประเมิน</div>
+        <div style="height:30px;padding:0 14px;background:var(--muted-soft);color:var(--muted);border-radius:15px;display:flex;align-items:center;font-size:12.5px">4 แจ้งเตือน/คำแนะนำ</div>
+        <div style="height:30px;padding:0 14px;background:var(--muted-soft);color:var(--muted);border-radius:15px;display:flex;align-items:center;font-size:12.5px">5 ยืนยัน</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;border-left:1px solid var(--line);padding-left:18px">
+        <div style="width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent-dark);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700">สศ</div>
+        <div><div style="font-size:12.5px;font-weight:700">สมศรี ใจดี</div><div style="font-size:11px;color:var(--muted)">พยาบาลวิชาชีพ</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1;padding:24px 32px;display:flex;gap:24px;overflow:hidden">
+    <div style="flex:1;display:flex;flex-direction:column;gap:16px;overflow:auto">
+      <div style="background:{{bannerSoft}};border:1px solid {{bannerBorder}};border-radius:12px;padding:22px 26px;display:flex;align-items:center;gap:18px">
+        <div style="width:56px;height:56px;border-radius:50%;background:{{bannerStrong}};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+        </div>
+        <div>
+          <div style="font-size:12.5px;font-weight:700;color:{{bannerStrong}};text-transform:uppercase;letter-spacing:.04em">{{bannerLabel}}</div>
+          <div style="margin-top:3px;font-size:20px;font-weight:700">{{headline}}</div>
+        </div>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">1. Dose Metformin vs. eGFR (CPG)</div>
+        <div style="display:flex;justify-content:space-between;padding:9px 0;font-size:13.5px">
+          <span style="color:var(--ink-2)">eGFR 38 mL/min/1.73m² (ระดับ 30–44) → ควร ≤ 1,000 มก./วัน — ปัจจุบันใช้ 2,000 มก./วัน</span>
+          <span style="color:{{doseColor}};font-weight:700;font-size:12.5px">{{doseStatus}}</span>
+        </div>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">2. MALA Risk Score (eGFR / BMI / แอลกอฮอล์)</div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px">
+            <span style="color:var(--ink-2)">eGFR &lt; 60 (38 mL/min/1.73m²)</span>
+            <span style="color:var(--ink);font-weight:700;font-size:12.5px">+1 คะแนน</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px">
+            <span style="color:var(--muted)">BMI &lt; 23 (20.8 kg/m²)</span>
+            <span style="color:var(--ink);font-weight:700;font-size:12.5px">+2 คะแนน</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:9px 0;font-size:13.5px">
+            <span style="color:var(--muted)">ดื่มแอลกอฮอล์หนัก</span>
+            <span style="color:var(--muted);font-weight:700;font-size:12.5px">ไม่เข้าเกณฑ์ (+0)</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0 0;margin-top:6px;border-top:1px solid var(--line);font-size:14px">
+            <span style="font-weight:700">รวม</span>
+            <span style="font-weight:700;color:{{scoreColor}}">{{scoreText}} (เกณฑ์แจ้งเตือน ≥2)</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">3. Sick Day Rule triggers</div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px">
+            <span style="color:var(--ink-2)">อาเจียน/ท้องเสียช่วงที่ผ่านมา</span>
+            <span style="color:oklch(58% 0.14 70);font-weight:700;font-size:12.5px">พบ</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:9px 0;font-size:13.5px">
+            <span style="color:var(--muted)">ทานได้น้อยลง / NSAIDs / สมุนไพร-อาหารเสริม</span>
+            <span style="color:var(--muted);font-weight:700;font-size:12.5px">ไม่พบ</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:340px;flex-shrink:0;display:flex;flex-direction:column;gap:14px">
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--accent-dark)">สถานะระบบ</div>
+        <div style="font-size:13px;font-weight:700;color:{{bannerStrong}}">{{statusTitle}}</div>
+        <div style="font-size:12.5px;line-height:1.7;color:var(--ink-2)">{{statusBody}}</div>
+        <div style="font-size:11.5px;line-height:1.6;color:var(--ink-2);background:var(--muted-soft);border-radius:8px;padding:10px 12px">คำนวณด้วยกฎที่ รพ. กำหนดไว้ล่วงหน้า (ไม่ใช่ AI) — AI ใช้แค่ช่วยเขียนคำแนะนำในขั้นถัดไปเท่านั้น</div>
+      </div>
+      <div style="flex:1"></div>
+      <button style="height:48px;background:{{bannerStrong}};color:white;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">{{ctaLabel}}</button>
+      <button style="height:40px;background:white;color:var(--ink-2);border:1px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer">ย้อนกลับไปแก้ไขข้อมูล</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"outcome":{"editor":"enum","default":"แจ้งเตือน","options":["แจ้งเตือน","ไม่แจ้งเตือน"]}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const outcome = this.props.outcome ?? 'แจ้งเตือน';
+    const byOutcome = {
+      'แจ้งเตือน': {
+        bannerSoft: 'oklch(95% 0.045 25)',
+        bannerBorder: 'oklch(85% 0.06 25)',
+        bannerStrong: 'oklch(54% 0.19 25)',
+        bannerLabel: 'แจ้งเตือน · Alert',
+        headline: 'นาง สมหญิง จ. — dose ไม่เหมาะสมกับ eGFR + Risk Score ถึงเกณฑ์',
+        doseStatus: 'ไม่เหมาะสม',
+        doseColor: 'oklch(54% 0.19 25)',
+        scoreText: '3',
+        scoreColor: 'oklch(54% 0.19 25)',
+        statusTitle: 'ระบบแจ้งเตือนโรงพยาบาลแม่ข่ายแล้ว — ทั้งในแอปและ LINE กลุ่ม',
+        statusBody: 'แพทย์/พยาบาลที่ รพ.เชียงรายประชานุเคราะห์จะรับดูแลผู้ป่วยต่อโดยตรง หน้างานไม่ต้องรอคำแนะนำกลับมาทำต่อ',
+        ctaLabel: 'ดำเนินการต่อ → ดูสถานะการแจ้งเตือน'
+      },
+      'ไม่แจ้งเตือน': {
+        bannerSoft: 'oklch(94% 0.05 150)',
+        bannerBorder: 'oklch(84% 0.07 150)',
+        bannerStrong: 'oklch(56% 0.14 150)',
+        bannerLabel: 'ไม่แจ้งเตือน · No Alert',
+        headline: 'นาง สมหญิง จ. — dose เหมาะสม, Risk Score ไม่ถึงเกณฑ์ (พบ Sick Day trigger 1 ข้อ)',
+        doseStatus: 'เหมาะสม',
+        doseColor: 'oklch(56% 0.14 150)',
+        scoreText: '1',
+        scoreColor: 'var(--ink)',
+        statusTitle: 'ไม่เข้าเกณฑ์แจ้งเตือน — ระบบสร้างคำแนะนำให้แล้ว',
+        statusBody: 'AI ช่วยสังเคราะห์คำแนะนำ Sick Day Rules จากปัจจัยที่พบ ให้หน้างานนำไปแจ้งผู้ป่วยได้ทันที ไม่ต้องรอแพทย์',
+        ctaLabel: 'ดำเนินการต่อ → ดูคำแนะนำ'
+      }
+    };
+    const o = byOutcome[outcome] ?? byOutcome['แจ้งเตือน'];
+    return { ...o };
+  }
+}
+</script>
+</body>
+</html>
