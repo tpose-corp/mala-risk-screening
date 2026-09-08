@@ -61,7 +61,7 @@ TEST (W9–11)      UAT with real users, ≥10 sessions, measure before/after me
 DELIVER (W12–14)  Demo to real users + the medical team, Final Presentation, Portfolio
 ```
 
-**Current status:** in **DISCOVER**, approaching the W5 User Validation Gate (Sep 9, 2026) — all 4 documents the Gate requires are complete, but the number of real users interviewed hasn't reached the threshold yet. See the latest status in [`.docs/README.md`](.docs/README.md)
+**Current status:** in **DISCOVER**, approaching the W5 User Validation Gate (Sep 9, 2026) — all 4 documents the Gate requires are complete, but the number of real users interviewed hasn't reached the threshold yet, the course rule doesn't require hitting the target exactly, but does require using the problem/overview from what's actually happened.
 
 ## Guardrails to hold throughout the project
 

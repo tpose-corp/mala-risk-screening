@@ -17,3 +17,7 @@ build/
 
 # Logs
 *.log
+
+# Not ready to commit / internal-only
+Roles.txt
+thresholds/
