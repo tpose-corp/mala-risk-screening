@@ -43,25 +43,23 @@ A web app for screening MALA risk, for primary-care front-line staff (who may no
 | What you need | Go to |
 |---|---|
 | Problem, scope, constraints, KPIs, open questions still awaiting an answer from the hospital contact | [`intent.md`](intent.md) |
-| Legal requirements (PDPA, Computer Crime Act §26, Electronic Transactions Act §9/26/28) | [`.docs/03-compliance/rule.md`](.docs/03-compliance/rule.md) |
+| Legal requirements (PDPA, Computer Crime Act §26, Electronic Transactions Act §9/26/28) — the agent's compliance rulebook | [`rule.md`](rule.md) |
+| The agent's operating rules for this repo (scope, stack, what never to invent, how to work) | [`CLAUDE.md`](CLAUDE.md) |
 | Original project document from the hospital | `.docs/01-requirements/โครงการ MALA screening - ศูนย์ข้อมูลยา รพศ ชร.docx` |
 | Prototype screens (Claude Design canvas, real 13-item form + binary alert model, still pending real-user testing) | [`.docs/02-design/prototype-v2/`](.docs/02-design/prototype-v2/) |
 | Deliverables for the W5 User Validation Gate (proposal, backlog, design draft, compliance) | [`.docs/README.md`](.docs/README.md) |
-| Whole-project 4-month plan (DISCOVER→BUILD→TEST→DELIVER) | `roadmap.md` (outside this repo — an internal team working plan, not a deliverable sent to the hospital contact) |
+| Locked scope for this build (MUST/SHOULD/COULD/WON'T) | [`.docs/04-build/scope-lock.md`](.docs/04-build/scope-lock.md) |
+| Sprint 0 setup status + steps | [`.docs/04-build/sprint-0.md`](.docs/04-build/sprint-0.md) |
 
-## Workflow overview (4 months, per the course roadmap)
+## Current status
 
-```
-DISCOVER (W1–5)   Prove the problem is real and requirements come from real people
-   ↓  Gate: ≥5 real users (target ≥15 total), 4 diagrams, every requirement traced back to a real pain point
-BUILD (W6–8)      Lock the scope to 1 core workflow and build it end-to-end working, ready for the Alpha Demo
-   ↓
-TEST (W9–11)      UAT with real users, ≥10 sessions, measure before/after metrics, fix ≥3 items from real feedback
-   ↓
-DELIVER (W12–14)  Demo to real users + the medical team, Final Presentation, Portfolio
-```
-
-**Current status:** in **DISCOVER**, approaching the W5 User Validation Gate (Sep 9, 2026) — all 4 documents the Gate requires are complete, but the number of real users interviewed hasn't reached the threshold yet, the course rule doesn't require hitting the target exactly, but does require using the problem/overview from what's actually happened.
+Requirements and design (problem statement, backlog, feature list, user journey, prototype, diagrams,
+compliance) are complete; the W5 Gate is passed. Now in **BUILD (W6)**: scope lock and Sprint 0 are
+in progress — see `.docs/04-build/` for the current checklist. Real front-line staff interviews are
+still ongoing (see the interview log in
+[`.docs/01-requirements/backlog.md`](.docs/01-requirements/backlog.md)) — more real interviews
+strengthen the requirements, but per the instructor's confirmation (since Sep 9, 2026), the Gate
+itself grades evidence of real problems/needs, not a literal headcount.
 
 ## Guardrails to hold throughout the project
 
@@ -69,7 +67,7 @@ DELIVER (W12–14)  Demo to real users + the medical team, Final Presentation, P
 - **Clinical criteria (risk factors, thresholds, number of result tiers) must come only from the hospital contact/medical team** — the dev team or an AI must never invent them (see open questions in `intent.md`)
 - **Every requirement must trace back to a real pain source** (an interview, or a real case from the docx) — if there's no real source yet, mark it `UNVERIFIED`/`BLOCKED` and don't use it to answer the Gate
 - **฿0 budget** — free/open-source tools and platforms only
-- **Always PDPA-safe** — never use real patient data during dev/demo; use synthetic data (see `.docs/03-compliance/rule.md`)
+- **Always PDPA-safe** — never use real patient data during dev/demo; use synthetic data (see `rule.md`)
 - **The system must never make clinical decisions in place of a doctor** — a doctor must always make the final call
 
 ## Team
