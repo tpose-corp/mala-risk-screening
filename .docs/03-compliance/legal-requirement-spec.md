@@ -37,9 +37,9 @@ This document acts as a **traceability matrix**: every rule in `rule.md` must tr
 | Editing an already-signed document must create a new version, traceably | PBI-14 | |
 | No staff member may sign on another's behalf; must authenticate before signing | PBI-01, PBI-11 | |
 
-## Gaps to close before entering BUILD (W6)
+## Gaps to close before implementation begins
 1. PBI-13 (consent/privacy notice) still BLOCKED — waiting on the hospital contact to answer whether an existing process already covers this
 2. Name a DPO in `../../Roles.txt` — no one has been named yet
 3. **New, Sep 8, 2026:** legal basis/agreement for sending patient data from รพ.สต. to the referral hospital for analysis (PBI-15) — not checked at all yet
 
-Linked to: `rule.md` (the original rules, same folder), `../01-requirements/backlog.md` (the full backlog), `../00-proposal/proposal.md`
+Linked to: `../../rule.md` (the original rules, repo root as of Sprint 0/W6), `../01-requirements/backlog.md` (the full backlog), `../00-proposal/proposal.md`
