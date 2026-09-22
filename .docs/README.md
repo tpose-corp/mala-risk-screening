@@ -2,6 +2,9 @@
 
 T-POSE Corp · MALA Risk Screening · prepared Sep 7, 2026 (Gate: Sep 9, 2026)
 
+> **W6 Sprint 0 docs (scope lock, setup checklist) live in [`04-build/`](04-build/), not here** —
+> this folder is frozen as the Gate submission record.
+
 ## The 4 deliverables the course requires in full
 
 | # | Required | File |
@@ -9,7 +12,13 @@ T-POSE Corp · MALA Risk Screening · prepared Sep 7, 2026 (Gate: Sep 9, 2026)
 | 1 | Updated Proposal (problem statement + target users) | `00-proposal/proposal.md` |
 | 2 | Product Backlog | `01-requirements/backlog.md` |
 | 3 | Design draft (feature-list, user-journey, prototype, 4 diagrams) | `02-design/feature-list.md`, `02-design/user-journey.md`, `02-design/prototype.md`, `02-design/diagrams.md` |
-| 4 | Compliance (rule.md + legal requirement spec traced from W2) | `03-compliance/rule.md` + `03-compliance/legal-requirement-spec.md` |
+| 4 | Compliance (rule.md + legal requirement spec traced from W2) | `../rule.md` (moved to repo root at Sprint 0, W6) + `03-compliance/legal-requirement-spec.md` |
+
+> **Update:** the instructor confirmed, since Sep 9, 2026, that the Gate does not require a literal
+> ≥5 interview headcount — what's graded is real, evidence-backed problems/needs from primary-care
+> staff, which the team has (INT-01 + DOC-01 + DOC-02). The "❌ 1/5" line below is the historical
+> snapshot from the actual Sep 8 submission (written before that confirmation); see
+> `.docs/01-requirements/backlog.md` for the corrected framing going forward.
 
 ## Current Pass/Fail readout (Sep 8, 2026)
 
@@ -27,6 +36,6 @@ T-POSE Corp · MALA Risk Screening · prepared Sep 7, 2026 (Gate: Sep 9, 2026)
 3. Confirm the real LINE group + hospital recipient for the pilot area, and design the in-app notification side (blocks PBI-08, PBI-16)
 4. Name a DPO in `../Roles.txt` (compliance gap)
 5. Check the legal basis for sending patient data across organizations to the referral hospital (PBI-15 — see `03-compliance/legal-requirement-spec.md`)
-6. Confirm whether the Part 3.0 chatbot (PBI-S3) is staff-facing or patient-facing before designing it
+6. ~~Confirm whether the Part 3.0 chatbot (PBI-S3) is staff-facing or patient-facing before designing it~~ — **answered:** patient-facing (see `../intent.md`)
 
 > **Sep 8, 2026, 2nd pass:** the real clinical criteria arrived (`thresholds/`, DOC-02) and replaced the 3-tier model from the 1st pass. The result is now **binary**: a deterministic rule engine (dose-vs-eGFR + risk score + Sick Day flags — not AI) decides alert vs. no-alert. Alert → the hospital takes the patient over, notified through **both the app and a LINE group** at once. No-alert → AI-assisted advice is generated and delivered by staff immediately, no doctor involved. Every case's data still goes to the hospital for analysis (PBI-15). PBI-09 (the old "doctor sends a recommendation" story) is superseded by PBI-16. The prototype (`02-design/prototype-v2/`) and a Figma copy (https://www.figma.com/design/L0YyF578hAPHRHlGUICkAf) were rebuilt to match — see detail in `../intent.md` and `02-design/prototype.md`
