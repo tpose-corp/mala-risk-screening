@@ -50,7 +50,6 @@ A web app for screening MALA risk, for primary-care front-line staff (who may no
 | Deliverables for the W5 User Validation Gate (proposal, backlog, design draft, compliance) | [`.docs/README.md`](.docs/README.md) |
 | Locked scope for this build (MUST/SHOULD/COULD/WON'T) | [`.docs/04-build/scope-lock.md`](.docs/04-build/scope-lock.md) |
 | Sprint 0 setup status + steps | [`.docs/04-build/sprint-0.md`](.docs/04-build/sprint-0.md) |
-| Team roles | [`Roles.txt`](Roles.txt) |
 
 ## Current status
 
