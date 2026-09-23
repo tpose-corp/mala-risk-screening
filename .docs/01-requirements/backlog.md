@@ -7,13 +7,20 @@ Owner: Product Owner (Sutapant Chucham)
 
 ## ⚠️ User Validation Gate status (read this first)
 
+> **Confirmed by the instructor since Sep 9, 2026:** the Gate does not require hitting a literal
+> interview headcount. What's actually graded is whether the team gathered **real problems and
+> needs from actual primary-care nurses/staff** and traced requirements back to them —
+> interviewing exactly 5+ named people is not itself the pass/fail bar. Treat the interview count
+> below as supporting evidence, not the blocker. Keep collecting real pain points/needs as the
+> team encounters real staff, but don't treat "not enough interviews" as an open blocker on its own.
+
 | Criterion | Target | Current status (Aug 27, 2026) |
 |---|---|---|
-| Real users interviewed | ≥ 5 (before Sep 9), target ≥ 15 total this month | **1 person** — the hospital contact (not yet confirmed whether they count as person 1/5 or are the original project owner) |
+| Real problems/needs gathered from real primary-care staff | Evidence-based, not headcount-based (confirmed by the instructor since Sep 9, 2026) | **1 person** — the hospital contact — plus the original docx (DOC-01) and the real clinical-criteria documents (DOC-02); more staff-level interviews strengthen this but aren't individually required |
 | All 4 diagrams complete | use-case, ER, sequence, architecture | 🔶 last drafted Sep 8, 2026 (2nd pass) — **stale again as of the same day**, real clinical criteria + binary model (DOC-02) arrived after that draft; needs a 3rd pass |
-| Every requirement traces back to a real pain point | 100% | 🔶 some trace to the original docx (real, but not an interview), some trace to a single interview — **still doesn't meet the real-user headcount** |
+| Every requirement traces back to a real pain point | 100% | 🔶 some trace to the original docx (real, but not an interview), some trace to a single interview — evidence exists, keep strengthening as more real staff input comes in |
 
-**Summary: the Gate isn't passed yet because the real-user count is short (1/5) — the course rule (`roadmap.md`) doesn't require hitting the target exactly, but does require using the problem/overview from what's actually happened**
+**Summary: the Gate's real bar is traceable, evidence-backed requirements — not a headcount. The team has real evidence (INT-01, DOC-01, DOC-02); the open item is finishing the diagrams' 3rd pass and continuing to gather staff-level pain points where possible.**
 
 ## Interview log (pain-source evidence)
 
@@ -26,7 +33,10 @@ Owner: Product Owner (Sutapant Chucham)
 
 ### Problem overview (from INT-01 and DOC-01)
 
-> Note: this content deepens the understanding of the "real pain" from one informant, but **does not stand in for the Gate's ≥5-real-user criterion** — the interview count stays at 1/5 per the table above; more real interviews are still needed before Sep 9, 2026
+> Note: this content deepens the understanding of the "real pain" from one informant. Per the
+> instructor's confirmation above (since Sep 9, 2026), the Gate cares about evidence of real
+> problems/needs, not a literal interview headcount — this section plus DOC-01/DOC-02 is that
+> evidence; more interviews with front-line staff are still valuable but not individually mandatory
 
 **What the disease is, where it comes from:** Metformin-Associated Lactic Acidosis (MALA) is an uncommon but severe, high-mortality complication (30–50% per medical reports), caused by Metformin (a widely used blood-sugar medication for type-2 diabetics) building up in the bloodstream once the kidneys can no longer clear it fast enough, combined with triggering factors such as dehydration, acute kidney injury (AKI), or an acute flare of a chronic disease — once lactic acid accumulates in the blood past a certain point it becomes a medical emergency requiring immediate treatment.
 
@@ -48,6 +58,7 @@ Pain source: `rule.md` (RBAC/PDPA requirement, derived from the W2 legal session
 |---|---|---|---|---|---|
 | PBI-01 | As front-line staff, I need to log in with my own account, so the system knows who entered the data | The system authenticates before accessing any patient data; logs the login event with a timestamp | Must | rule.md (PDPA + CCA §26) | Ready |
 | PBI-02 | As an admin, I need to set access rights by role (staff/doctor/admin), to restrict who sees patient data per least-privilege | Front-line staff sees only relevant cases; the screening result is shown only to authorized people | Must | rule.md (PDPA RBAC) | Ready |
+| PBI-17 | As a medical staff member, I need to verify my login with a second factor (MFA/OTP), so account access is harder to compromise for sensitive patient data | Login requires a second factor (OTP via SMS/app, or equivalent) in addition to password before granting access; failed second-factor attempts are logged | Should | Hospital contact request, Sep 2026 — team agreed | `.docs/04-build/scope-lock.md` (SHOULD) — build after PBI-01 works, doesn't gate the Alpha Demo |
 
 ## Epic B — Patient search/registration
 Pain source: INT-01 (need to know whether staff enters everything themselves or pulls from an existing system — not yet confirmed)
@@ -97,9 +108,9 @@ Pain source: `rule.md` (PDPA/ETA) — detailed in `.docs/03-compliance/legal-req
 
 | ID | User Story | Reason it's cut from MVP |
 |---|---|---|
-| PBI-S1 | AdminDashboard for tracking KPIs (% screened, MALA proportion, satisfaction) | Parked as a stretch goal per `roadmap.md` W6 — not a core workflow |
+| PBI-S1 | AdminDashboard for tracking KPIs (% screened, MALA proportion, satisfaction) | Parked as a stretch goal by team scope-lock decision — not a core workflow |
 | PBI-S2 | Automatic HOSxP/HIS integration | Needs the open question answered first; may exceed the 4-month timeline |
-| PBI-S3 | AI chatbot ("เป็นที่ปรึกษาเมื่อผู้ป่วยไม่สบาย" — DOC-02, Part 3.0) | Added Sep 8, 2026 — **now has a real pain source (DOC-02)**, unlike v1's guess, but still cut from MVP because it's unclear whether it's staff-facing or patient-facing (open question in `intent.md`) and needs that answered before design/build |
+| PBI-S3 | AI chatbot, patient-facing ("เป็นที่ปรึกษาเมื่อผู้ป่วยไม่สบาย" — DOC-02, Part 3.0) | Added Sep 8, 2026 — **has a real pain source (DOC-02)**, unlike v1's guess. **Confirmed patient-facing** (team decision) — still cut from MVP as a stretch goal; UX/UI still needs designing before build |
 
 ---
-Linked to: `.docs/00-proposal/proposal.md`, `.docs/02-design/*`, `.docs/03-compliance/legal-requirement-spec.md`, `../../intent.md` (full open questions), `../03-compliance/rule.md` (full legal requirements)
+Linked to: `.docs/00-proposal/proposal.md`, `.docs/02-design/*`, `.docs/03-compliance/legal-requirement-spec.md`, `../../intent.md` (full open questions), `../../rule.md` (full legal requirements, repo root)

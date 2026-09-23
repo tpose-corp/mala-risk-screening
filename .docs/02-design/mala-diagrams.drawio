@@ -1,4 +1,66 @@
-<mxfile host="app.diagrams.net" agent="claude-code" pages="4">
+<mxfile host="app.diagrams.net" agent="claude-code" pages="5">
+  <diagram id="mala-context-diagram" name="D1. System Context">
+    <mxGraphModel dx="728" dy="363" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1000" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ctitle" parent="1" style="text;html=1;fontSize=16;fontStyle=1;align=left;" value="System Context Diagram — MALA Risk Screening" vertex="1">
+          <mxGeometry height="30" width="700" x="40" y="5" as="geometry" />
+        </mxCell>
+        <mxCell id="csystem" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=14;verticalAlign=middle;align=center;" value="MALA Risk Screening System" vertex="1">
+          <mxGeometry height="120" width="280" x="380" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="cstaff" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=12;" value="Front-line Staff&#xa;(รพ.สต.)" vertex="1">
+          <mxGeometry height="60" width="30" x="70" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="cpatient" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" value="Patient&#xa;(data subject)" vertex="1">
+          <mxGeometry height="60" width="30" x="70" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="cdoctor" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=12;fillColor=#f8cecc;strokeColor=#b85450;" value="Doctor / Nurse&#xa;(Referral Hospital)" vertex="1">
+          <mxGeometry height="60" width="30" x="900" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="cadmin" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=12;" value="Admin" vertex="1">
+          <mxGeometry height="60" width="30" x="900" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="cline" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" value="LINE Platform&#xa;(external messaging)" vertex="1">
+          <mxGeometry height="60" width="240" x="400" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="chospdb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" value="Hospital Database&#xa;(analysis, every case)" vertex="1">
+          <mxGeometry height="80" width="220" x="410" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="chosxp" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;fontSize=11;" value="HOSxP / Hospital HIS&#xa;(not integrated — MVP)" vertex="1">
+          <mxGeometry height="70" width="220" x="720" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="ce1" edge="1" parent="1" source="cstaff" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.4;" target="csystem" value="logs in, fills&#xa;screening form">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ce2" edge="1" parent="1" source="cstaff" style="edgeStyle=orthogonalEdgeStyle;endArrow=open;dashed=1;html=1;fontSize=10;strokeColor=#666666;fontColor=#666666;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="cpatient" value="delivers advice /&#xa;refers to hospital">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ce3" edge="1" parent="1" source="cadmin" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;fontSize=10;exitX=0;exitY=0.5;entryX=1;entryY=0.6;" target="csystem" value="manages RBAC,&#xa;views audit log">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ce4" edge="1" parent="1" source="csystem" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;fontSize=10;strokeColor=#b85450;fontColor=#b85450;exitX=1;exitY=0.4;entryX=0;entryY=0.5;" target="cdoctor" value="in-app&#xa;notification">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ce5" edge="1" parent="1" source="csystem" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;fontSize=10;strokeColor=#b85450;fontColor=#b85450;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" target="cline" value="posts alert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ce6" edge="1" parent="1" source="cline" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;fontSize=10;strokeColor=#b85450;fontColor=#b85450;exitX=1;exitY=0.5;entryX=0.5;entryY=0;" target="cdoctor" value="LINE alert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ce7" edge="1" parent="1" source="csystem" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;fontSize=10;strokeColor=#d79b00;fontColor=#d79b00;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="chospdb" value="send every case&#xa;for analysis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ce8" edge="1" parent="1" source="csystem" style="edgeStyle=orthogonalEdgeStyle;endArrow=none;dashed=1;html=1;fontSize=10;strokeColor=#999999;fontColor=#999999;exitX=1;exitY=0.8;entryX=0;entryY=0.5;" target="chosxp" value="no integration&#xa;(MVP)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="clegend" parent="1" style="text;html=1;fontSize=11;fontColor=#666666;align=left;" value="One box = the system boundary. Actors (stick figures) and external systems (boxes) sit outside it. Dashed = out of scope for MVP." vertex="1">
+          <mxGeometry height="30" width="700" x="40" y="640" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
   <diagram id="mala-usecase-diagram" name="1. Use Case">
     <mxGraphModel dx="2257" dy="603" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1000" pageHeight="900" math="0" shadow="0">
       <root>
@@ -321,82 +383,79 @@
     </mxGraphModel>
   </diagram>
   <diagram id="mala-architecture-diagram" name="4. Architecture">
-    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1250" pageHeight="640" math="0" shadow="0">
+    <mxGraphModel dx="1257" dy="603" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1250" pageHeight="640" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="atitle" value="Architecture Diagram — MALA Risk Screening (₿0 budget, binary alert model)" style="text;html=1;fontSize=16;fontStyle=1;align=left;" vertex="1" parent="1">
-          <mxGeometry x="40" y="5" width="760" height="30" as="geometry" />
+        <mxCell id="atitle" parent="1" style="text;html=1;fontSize=16;fontStyle=1;align=left;" value="Architecture Diagram — MALA Risk Screening (₿0 budget, binary alert model)" vertex="1">
+          <mxGeometry height="30" width="760" x="40" y="5" as="geometry" />
         </mxCell>
-        <mxCell id="client" value="Client (Browser — mobile / desktop)" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontStyle=1;fontSize=12;strokeColor=#666666;fillColor=none;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="40" y="230" width="200" height="120" as="geometry" />
+        <mxCell id="client" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontStyle=1;fontSize=12;strokeColor=#666666;fillColor=none;spacingTop=8;" value="Client (Browser — mobile / desktop)" vertex="1">
+          <mxGeometry height="120" width="200" x="40" y="230" as="geometry" />
         </mxCell>
-        <mxCell id="staffbox" value="Primary Care Staff" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry x="70" y="270" width="140" height="50" as="geometry" />
+        <mxCell id="staffbox" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="Primary Care Staff" vertex="1">
+          <mxGeometry height="50" width="140" x="70" y="270" as="geometry" />
         </mxCell>
-        <mxCell id="host" value="รพ.สต. Server (on-prem, ₿0 budget)" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontStyle=1;fontSize=12;strokeColor=#666666;fillColor=none;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="320" y="50" width="330" height="510" as="geometry" />
+        <mxCell id="host" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontStyle=1;fontSize=12;strokeColor=#666666;fillColor=none;spacingTop=8;" value="รพ.สต. Server (on-prem, ₿0 budget)" vertex="1">
+          <mxGeometry height="510" width="330" x="320" y="50" as="geometry" />
         </mxCell>
-        <mxCell id="web" value="Web App Frontend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry x="360" y="90" width="250" height="55" as="geometry" />
+        <mxCell id="web" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="Web App Frontend" vertex="1">
+          <mxGeometry height="55" width="250" x="360" y="90" as="geometry" />
         </mxCell>
-        <mxCell id="api" value="Backend API&#xa;+ RBAC + Audit Log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry x="360" y="180" width="250" height="60" as="geometry" />
+        <mxCell id="api" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" value="Backend API&#xa;+ RBAC + Audit Log" vertex="1">
+          <mxGeometry height="60" width="250" x="360" y="180" as="geometry" />
         </mxCell>
-        <mxCell id="rules" value="Rule Engine&#xa;deterministic — dose/eGFR, risk score, Sick Day flags" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="360" y="270" width="250" height="65" as="geometry" />
+        <mxCell id="rules" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" value="Rule Engine&#xa;deterministic — dose/eGFR, risk score, Sick Day flags" vertex="1">
+          <mxGeometry height="65" width="250" x="360" y="270" as="geometry" />
         </mxCell>
-        <mxCell id="ai" value="AI / LLM Helper&#xa;advice text + optional chatbot — NOT the alert decision" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="360" y="365" width="250" height="65" as="geometry" />
+        <mxCell id="ai" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="AI / LLM Helper&#xa;advice text + optional chatbot — NOT the alert decision" vertex="1">
+          <mxGeometry height="65" width="250" x="360" y="365" as="geometry" />
         </mxCell>
-        <mxCell id="db" value="Database&#xa;Patient, Screening, Rule Result, Alert, Advice, Audit" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="380" y="460" width="210" height="90" as="geometry" />
+        <mxCell id="db" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" value="Database&#xa;Patient, Screening, Rule Result, Alert, Advice, Audit" vertex="1">
+          <mxGeometry height="90" width="210" x="380" y="460" as="geometry" />
         </mxCell>
-        <mxCell id="hospital" value="Referral Hospital Side" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontStyle=1;fontSize=12;strokeColor=#666666;fillColor=none;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="740" y="50" width="330" height="510" as="geometry" />
+        <mxCell id="hospital" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontStyle=1;fontSize=12;strokeColor=#666666;fillColor=none;spacingTop=8;" value="Referral Hospital Side" vertex="1">
+          <mxGeometry height="510" width="330" x="740" y="50" as="geometry" />
         </mxCell>
-        <mxCell id="linegrp" value="LINE Group&#xa;MALA alert — ~12 members" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry x="780" y="90" width="250" height="55" as="geometry" />
+        <mxCell id="linegrp" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" value="LINE Group&#xa;MALA alert — ~12 members" vertex="1">
+          <mxGeometry height="55" width="250" x="780" y="90" as="geometry" />
         </mxCell>
-        <mxCell id="hospitalui" value="In-App Notification&#xa;hospital team" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry x="780" y="180" width="250" height="55" as="geometry" />
+        <mxCell id="hospitalui" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" value="In-App Notification&#xa;hospital team" vertex="1">
+          <mxGeometry height="55" width="250" x="780" y="180" as="geometry" />
         </mxCell>
-        <mxCell id="hospdb" value="Hospital DB&#xa;analysis data — every case" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="800" y="400" width="220" height="90" as="geometry" />
+        <mxCell id="hospdb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" value="Hospital DB&#xa;analysis data — every case" vertex="1">
+          <mxGeometry height="90" width="220" x="800" y="400" as="geometry" />
         </mxCell>
-        <mxCell id="a1" value="HTTPS" style="endArrow=block;html=1;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.3;" edge="1" parent="1" source="staffbox" target="web">
+        <mxCell id="a1" edge="1" parent="1" source="staffbox" style="endArrow=block;html=1;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.3;" target="web" value="HTTPS">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="a2" value="REST / JSON" style="endArrow=block;html=1;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="web" target="api">
+        <mxCell id="a2" edge="1" parent="1" source="web" style="endArrow=block;html=1;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="api" value="REST / JSON">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="a3" style="endArrow=block;html=1;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="api" target="rules">
+        <mxCell id="a3" edge="1" parent="1" source="api" style="endArrow=block;html=1;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="rules">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="a4" value="no alert: draft advice" style="endArrow=block;html=1;fontSize=10;strokeColor=#82b366;fontColor=#82b366;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="rules" target="ai">
+        <mxCell id="a4" edge="1" parent="1" source="rules" style="endArrow=block;html=1;fontSize=10;strokeColor=#82b366;fontColor=#82b366;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="ai" value="no alert: draft advice">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="a5" style="endArrow=block;html=1;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="ai" target="db">
+        <mxCell id="a5" edge="1" parent="1" source="ai" style="endArrow=block;html=1;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="db">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="a6" value="alert, simultaneous" style="endArrow=block;html=1;fontSize=10;strokeColor=#b85450;fontColor=#b85450;exitX=1;exitY=0.3;entryX=0;entryY=0.3;" edge="1" parent="1" source="rules" target="linegrp">
+        <mxCell id="a6" edge="1" parent="1" source="rules" style="endArrow=block;html=1;fontSize=10;strokeColor=#b85450;fontColor=#b85450;exitX=1;exitY=0.3;entryX=0;entryY=0.3;" target="linegrp" value="alert, simultaneous">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="700" y="297" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="a7" value="alert, simultaneous" style="endArrow=block;html=1;fontSize=10;strokeColor=#b85450;fontColor=#b85450;exitX=1;exitY=0.7;entryX=0;entryY=0.3;" edge="1" parent="1" source="rules" target="hospitalui">
+        <mxCell id="a7" edge="1" parent="1" source="rules" style="endArrow=block;html=1;fontSize=10;strokeColor=#b85450;fontColor=#b85450;exitX=1;exitY=0.7;entryX=0;entryY=0.3;" target="hospitalui" value="alert, simultaneous">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="a8" value="send every case, always" style="endArrow=block;html=1;fontSize=10;strokeColor=#d79b00;fontColor=#d79b00;exitX=1;exitY=0.7;entryX=0;entryY=0.5;" edge="1" parent="1" source="db" target="hospdb">
+        <mxCell id="a8" edge="1" parent="1" source="db" style="endArrow=block;html=1;fontSize=10;strokeColor=#d79b00;fontColor=#d79b00;exitX=1;exitY=0.7;entryX=0;entryY=0.5;" target="hospdb" value="send every case, always">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="a9" value="log every sensitive access" style="endArrow=none;dashed=1;html=1;fontSize=9;strokeColor=#9673a6;fontColor=#9673a6;exitX=1;exitY=0.5;entryX=0;entryY=0.7;" edge="1" parent="1" source="api" target="db">
+        <mxCell id="a9" edge="1" parent="1" source="api" style="endArrow=none;dashed=1;html=1;fontSize=9;strokeColor=#9673a6;fontColor=#9673a6;exitX=1;exitY=0.5;entryX=0;entryY=0.7;" target="db" value="log every sensitive access">
           <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="alegend" value="Not shown: AdminDashboard, HOSxP integration — stretch goals, out of MVP. Chatbot omitted until staff-vs-patient-facing is confirmed." style="text;html=1;fontSize=11;fontColor=#666666;align=left;" vertex="1" parent="1">
-          <mxGeometry x="40" y="580" width="900" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
