@@ -1,4 +1,4 @@
-# User Journey — MALA Risk Screening
+   # User Journey — MALA Risk Screening
 
 v3 — Sep 8, 2026 · Pain source: INT-01 (hospital contact, Sep 7, 2026) + DOC-01 (original project document) + DOC-02 (real clinical criteria, Sep 8, 2026)
 Fixed from v2: v2 modeled 3 named risk tiers with a doctor-recommendation-and-wait step for the lighter two. DOC-02 (the real criteria that arrived the same day) shows a **binary** model instead — alert vs. no-alert — with AI-generated advice delivered instantly for the no-alert case, no doctor loop.
@@ -33,4 +33,4 @@ Fixed from v2: v2 modeled 3 named risk tiers with a doctor-recommendation-and-wa
 - Which scoring document is authoritative — the outline's point tally (≥2 = alert) or the demo's single 0–100 Risk Score (threshold 60) — or how they combine
 - The real LINE group + hospital recipient for the pilot area, and the in-app notification side's design (undefined in any source doc)
 - Real Sick Day Rules wording for step 5's AI-generated advice
-- Whether the Part 3.0 chatbot (mentioned in DOC-02 for symptomatic patients) is meant for staff or for patients directly — affects whether it belongs in this journey at all
+- ~~Whether the Part 3.0 chatbot is meant for staff or for patients directly~~ — **answered: patient-facing.** It's a separate patient-side interaction, not part of this staff journey — stays out of scope for this document until it's designed as its own journey
