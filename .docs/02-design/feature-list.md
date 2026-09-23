@@ -2,7 +2,7 @@
 
 v3 — Sep 8, 2026 · based on `.docs/01-requirements/backlog.md` · rebuilt around the real clinical criteria in `thresholds/` (DOC-02) — binary alert model, not 3 named tiers; see `../../intent.md`
 
-## MVP — 3 core capabilities (locked per roadmap.md W6)
+## MVP — 3 core capabilities (scope locked by the team)
 
 ### 1. Screen the patient
 
@@ -38,9 +38,9 @@ v3 — Sep 8, 2026 · based on `.docs/01-requirements/backlog.md` · rebuilt aro
 
 | Backlog ID | Feature | Reason |
 |---|---|---|
-| PBI-S1 | AdminDashboard (KPIs: % screened, MALA proportion, satisfaction) | Cut from core at W6 per roadmap.md |
+| PBI-S1 | AdminDashboard (KPIs: % screened, MALA proportion, satisfaction) | Cut from core by team scope-lock decision |
 | PBI-S2 | Automatic HOSxP/HIS integration | Waiting on the open question about the รพ.สต.'s existing system |
-| PBI-S3 | AI chatbot ("เป็นที่ปรึกษาเมื่อผู้ป่วยไม่สบาย" — DOC-02, Part 3.0) | Has a real pain source now (unlike v2's guess), but cut from MVP because it's still unclear whether it's staff-facing or patient-facing — see `../../intent.md` |
+| PBI-S3 | AI chatbot, patient-facing ("เป็นที่ปรึกษาเมื่อผู้ป่วยไม่สบาย" — DOC-02, Part 3.0) | Has a real pain source now (unlike v2's guess). Confirmed patient-facing — still cut from MVP as a stretch goal, UX/UI not yet designed — see `../../intent.md` |
 
 ## Features still BLOCKED (waiting on the hospital contact before detailed design)
 Feature 3 needs the alcohol-question shape reconciled between DOC-02's two documents — Feature 4 needs the two scoring documents (point-tally vs. 0–100 Risk Score) reconciled — Feature 7 needs the real LINE group + hospital recipient + in-app notification design — Feature 8 needs real Sick Day Rules wording — see the open questions in `../../intent.md`

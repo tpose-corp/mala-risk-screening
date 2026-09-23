@@ -2,7 +2,7 @@
 
 v3 — Sep 8, 2026 · rebuilt around the real clinical criteria in `thresholds/` (DOC-02) — see `../../intent.md` "Real clinical criteria received" and "Confirmed workflow model" for the source of every rule below. An editable draw.io version of these same 4 diagrams lives alongside this file at `mala-diagrams.drawio`.
 
-> **What changed from v2 (same day):** v2 modeled 3 named risk tiers with a doctor-recommendation loop for the lighter two. The real documents that arrived after v2 show a **binary** model instead (alert vs. no-alert), computed by a **deterministic rule engine** (not AI), with alerts going through **both the in-app system and a LINE group**, and AI used only to generate patient advice text (and a possible chatbot) for the no-alert path. Still open, not resolved by this version: reconciling the outline's point-tally scoring against the demo's single 0–100 "Risk Score," and whether the Part 3.0 chatbot is staff-facing or patient-facing — see `../../intent.md`. Do not use this as a final BUILD spec until those close.
+> **What changed from v2 (same day):** v2 modeled 3 named risk tiers with a doctor-recommendation loop for the lighter two. The real documents that arrived after v2 show a **binary** model instead (alert vs. no-alert), computed by a **deterministic rule engine** (not AI), with alerts going through **both the in-app system and a LINE group**, and AI used only to generate patient advice text and a **patient-facing chatbot** (confirmed) for the no-alert path. Still open, not resolved by this version: reconciling the outline's point-tally scoring against the demo's single 0–100 "Risk Score" — see `../../intent.md`. Do not use this as a final BUILD spec until that closes.
 
 ## 1. Use-case diagram
 
@@ -11,6 +11,7 @@ flowchart LR
   staff[["Front-line staff (รพ.สต.)"]]
   doctor[["Doctor/Nurse, referral hospital\n(receives alert, manages patient)"]]
   admin[["Admin"]]
+  patient[["Patient"]]
 
   subgraph sys["MALA Risk Screening System"]
     UC1((Log in))
@@ -26,7 +27,7 @@ flowchart LR
     UC10((Send data to hospital\nfor analysis — every case))
     UC11((Manage user access RBAC))
     UC12((View audit log))
-    UC13((Chatbot consult\nstaff or patient — TBD which))
+    UC13((Chatbot consult\npatient-facing — confirmed))
   end
 
   staff --> UC1
@@ -44,7 +45,7 @@ flowchart LR
   UC9 -. include .-> UC10
   UC3 -. include .-> UC12
   UC9 -. include .-> UC12
-  staff -.-> UC13
+  patient -.-> UC13
   admin --> UC11
   admin --> UC12
 ```
@@ -177,7 +178,7 @@ flowchart TB
   subgraph Server["Hosting: รพ.สต. server (฿0 budget)"]
     API[Backend API]
     Rules[Rule engine\ndeterministic - dose/eGFR, risk score, Sick Day flags]
-    AI[AI/LLM helper\nadvice text + optional chatbot - NOT the risk decision]
+    AI[AI/LLM helper\nadvice text + patient-facing chatbot - NOT the risk decision]
     DB[(Database - Patient, Screening, Rule result, Alert, Advice, Audit)]
   end
 
@@ -201,7 +202,7 @@ flowchart TB
   API -.write.-> AuditLog[Audit Log - CCA §26, kept ≥90 days]
 ```
 
-**Note:** the rule engine box is deliberately drawn separate from the AI/LLM box — the alert decision itself is plain deterministic code per `../../intent.md`'s "Risk calculation approach," never a model call. AI is scoped to advice-text generation and the (still-undecided) chatbot only. Not shown: AdminDashboard, HOSxP integration — stretch, out of MVP. See `.docs/01-requirements/backlog.md` for the Stretch section.
+**Note:** the rule engine box is deliberately drawn separate from the AI/LLM box — the alert decision itself is plain deterministic code per `../../intent.md`'s "Risk calculation approach," never a model call. AI is scoped to advice-text generation and the patient-facing chatbot only (chatbot itself is still stretch/out of MVP, see `.docs/04-build/scope-lock.md`). Not shown: AdminDashboard, HOSxP integration — stretch, out of MVP. See `.docs/01-requirements/backlog.md` for the Stretch section.
 
 ## Note
-This version is based on `thresholds/` (DOC-02), arrived Sep 8, 2026. Two things are known to be unreconciled inside that same source material — the outline spreadsheet's point-tally scoring vs. the demo deck's single 0–100 Risk Score, and whether Part 3.0's chatbot is staff- or patient-facing — see the open questions in `../../intent.md`. Do not treat this as a final BUILD spec until those close, and until the clinical criteria are formally endorsed (the outline itself is titled "draft").
+This version is based on `thresholds/` (DOC-02), arrived Sep 8, 2026. One thing is still known to be unreconciled inside that same source material — the outline spreadsheet's point-tally scoring vs. the demo deck's single 0–100 Risk Score — see the open questions in `../../intent.md`. Do not treat this as a final BUILD spec until that closes, and until the clinical criteria are formally endorsed (the outline itself is titled "draft").

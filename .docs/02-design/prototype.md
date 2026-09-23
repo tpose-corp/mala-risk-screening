@@ -1,5 +1,7 @@
 # Prototype — MALA Risk Screening
 
+v4 — Sep 16, 2026 · added an interactive **user journey** build for explaining the prototype to non-technical audiences (professor, hospital contact) — a single self-contained HTML file, not a Claude Design canvas: `prototype-v2/mala-user-journey.html`, published at https://claude.ai/artifact/CrqaWTE6h6jzvYeNXBBUfm. Click-through, not click-dummy stills: real form inputs, live BMI/dose/Risk-Score computation matching the v3 logic below, branching Red/Green outcome, plain-language "คำอธิบาย" captions per screen (toggle-able), and 3 preset patients (red case, green-with-Sick-Day-trigger case, clean green case) plus the new-patient branch. Same open items as v3 apply (scoring thresholds still unconfirmed with the hospital) — this is a communication aid for the flow, not a claim that the numbers are final.
+
 v3 — Sep 8, 2026 · the rebuild described in v2 is **done**. `prototype-v2/` now matches the real criteria in `thresholds/` (DOC-02) — binary alert model, real 13-item form, AI-generated instant advice for the no-alert case, no doctor-recommendation wait step. Also ported to Figma (freeform) — see the bottom of this file.
 
 Screens live at `prototype-v2/*.dc.html` (Claude Design canvas, in this same folder) and the published canvas: https://claude.ai/code/artifact/cc3a135d-2da2-46d6-9761-6eba7e325466. The original guessed prototype set (`prototype/*.dc.html`, 3-tier model) has been removed from the repo — `prototype-v2/` is the only set now.
@@ -15,7 +17,7 @@ Screens live at `prototype-v2/*.dc.html` (Claude Design canvas, in this same fol
 | Instant advice (no-alert case) | PBI-16 | **Done** — `Recommendation.dc.html` rebuilt into "AI-generated advice shown immediately, staff delivers it, no waiting, no doctor" |
 | Confirm | PBI-11 | **Done** — `Confirm.dc.html`'s tweak relabeled to `pathType`: "แจ้งเตือนแล้ว" / "แจ้งคำแนะนำแล้ว" |
 | AdminDashboard | PBI-S1 | Out of MVP — no file (the old guessed `AdminDashboard.dc.html` was removed along with the rest of the original prototype set) |
-| Chatbot | PBI-S3 | Out of MVP — no file, still blocked on staff-vs-patient-facing |
+| Chatbot | PBI-S3 | Out of MVP — no file yet. Confirmed patient-facing (team decision); UX/UI still needs designing |
 
 ## Still open
 1. Don't finalize any of this as pixel-final until the two scoring documents (point-tally vs. 0–100 Risk Score) are reconciled with the hospital contact
