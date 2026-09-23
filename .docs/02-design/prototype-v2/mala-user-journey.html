@@ -1,0 +1,891 @@
+<title>MALA Risk Journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Taviraj:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --shell-bg:#F6F1F3;
+  --shell-surface:#FFFFFF;
+  --shell-surface-2:#EFE6EA;
+  --shell-border:#E1D5DB;
+  --shell-ink:#241A20;
+  --shell-ink-2:#5B4B52;
+  --shell-muted:#8C7B82;
+  --accent:#990066;
+  --accent-dark:#7A0052;
+  --accent-soft:#F3E3EC;
+  --ok:#2E7D53;
+  --ok-soft:#E4F3EA;
+  --danger:#B3261E;
+  --danger-soft:#FBE7E5;
+  --focus:#7A0052;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --shell-bg:#181215;
+    --shell-surface:#211A1E;
+    --shell-surface-2:#2A2126;
+    --shell-border:#3A2E34;
+    --shell-ink:#F3EAEE;
+    --shell-ink-2:#CBB9C2;
+    --shell-muted:#96838C;
+    --accent:#E85CB0;
+    --accent-dark:#F080C4;
+    --accent-soft:#3A2130;
+    --ok:#6FCF9A;
+    --ok-soft:#1C3327;
+    --danger:#F29A94;
+    --danger-soft:#3A2320;
+    --focus:#E85CB0;
+  }
+}
+:root[data-theme="dark"]{
+  --shell-bg:#181215;
+  --shell-surface:#211A1E;
+  --shell-surface-2:#2A2126;
+  --shell-border:#3A2E34;
+  --shell-ink:#F3EAEE;
+  --shell-ink-2:#CBB9C2;
+  --shell-muted:#96838C;
+  --accent:#E85CB0;
+  --accent-dark:#F080C4;
+  --accent-soft:#3A2130;
+  --ok:#6FCF9A;
+  --ok-soft:#1C3327;
+  --danger:#F29A94;
+  --danger-soft:#3A2320;
+  --focus:#E85CB0;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--shell-bg);
+  color:var(--shell-ink);
+  font-family:"Sarabun","Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+a{color:var(--accent)}
+
+.wrap{max-width:1180px;margin:0 auto;padding:22px 20px 56px}
+
+.masthead{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:18px}
+.masthead h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em}
+.masthead .sub{margin-top:4px;font-size:13px;color:var(--shell-ink-2)}
+.wordmark{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.wordmark .name{font-family:"Taviraj",Sarabun,serif;font-weight:600;font-size:19px;color:var(--shell-ink);letter-spacing:.005em}
+.wordmark .desc{font-size:12.5px;color:var(--shell-muted);border-left:1px solid var(--shell-border);padding-left:10px}
+
+.controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--shell-ink-2);cursor:pointer;user-select:none}
+.toggle .sw{width:34px;height:20px;border-radius:999px;background:var(--shell-surface-2);border:1px solid var(--shell-border);position:relative;transition:background .15s}
+.toggle .sw::after{content:"";position:absolute;top:1px;left:1px;width:16px;height:16px;border-radius:50%;background:var(--shell-muted);transition:transform .15s}
+.toggle input{display:none}
+.toggle input:checked + .sw{background:var(--accent)}
+.toggle input:checked + .sw::after{transform:translateX(14px);background:white}
+.ghost-btn{height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--shell-border);background:var(--shell-surface);color:var(--shell-ink-2);font-size:12.5px;font-weight:600;cursor:pointer}
+.ghost-btn:hover{border-color:var(--accent)}
+
+.rail-outer{overflow-x:auto;padding-bottom:6px;margin-bottom:20px;-webkit-overflow-scrolling:touch}
+.rail{display:flex;align-items:flex-start;min-width:640px}
+.rail-node{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;min-width:76px}
+.rail-node .dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:"IBM Plex Mono",monospace;background:var(--shell-surface-2);color:var(--shell-muted);border:1.5px solid var(--shell-border);z-index:1;flex-shrink:0;padding:0}
+.rail-node .lbl{margin-top:7px;font-size:10.5px;color:var(--shell-muted);text-align:center;line-height:1.35;max-width:88px}
+.rail-node .line{position:absolute;top:13px;left:50%;width:100%;height:2px;background:var(--shell-border);z-index:0}
+.rail-node:last-child .line{display:none}
+.rail-node.done .dot{background:var(--accent-soft);color:var(--accent-dark);border-color:var(--accent);cursor:pointer}
+.rail-node.done .line{background:var(--accent)}
+.rail-node.done .lbl{color:var(--shell-ink-2)}
+.rail-node.active .dot{background:var(--accent-dark);color:white;border-color:var(--accent-dark)}
+.rail-node.active .lbl{color:var(--shell-ink);font-weight:700}
+
+.stage-layout{display:flex;gap:22px;align-items:flex-start}
+.stage-col{flex:1;min-width:0}
+.stage-outer{width:100%;overflow:hidden;border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.06), 0 12px 32px -18px rgba(122,0,82,.35);border:1px solid var(--shell-border)}
+.stage-scaler{transform-origin:top left}
+.stage{width:1280px;background:var(--app-bg);font-family:"Sarabun","Noto Sans Thai",sans-serif}
+
+.explain-col{width:300px;flex-shrink:0}
+@media (max-width:900px){
+  .stage-layout{flex-direction:column}
+  .stage-col{width:100%}
+  .explain-col{width:100%}
+}
+.explain-card{background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:18px 20px;position:sticky;top:16px;overflow-wrap:anywhere;min-width:0}
+.explain-card .tag{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-dark);font-family:"IBM Plex Mono",monospace}
+.explain-card h3{font-size:15px;margin:8px 0 6px;color:var(--shell-ink)}
+.explain-card p{font-size:13px;line-height:1.65;color:var(--shell-ink-2);margin:0}
+.explain-card .why{margin-top:10px;padding-top:10px;border-top:1px solid rgba(122,0,82,.18);font-size:12px;color:var(--shell-ink-2);line-height:1.6}
+
+.egfr-meter{display:flex;flex-direction:column;gap:5px}
+.egfr-meter .bar{position:relative;height:14px;border-radius:7px;overflow:hidden;display:flex}
+.egfr-meter .zone{height:100%}
+.egfr-meter .marker{position:absolute;top:-4px;width:2px;height:22px;background:var(--shell-ink);transform:translateX(-1px)}
+.egfr-meter .zlabels{display:flex;font-size:10px;color:var(--shell-muted);font-family:"IBM Plex Mono",monospace}
+
+/* ===== inner app screen (fixed, product's own visual system regardless of viewer theme) ===== */
+.stage{
+  --ink:#1C1C1C;--ink-2:#4A4A4A;--muted:#8A8A8A;
+  --bg:#F9F9F9;--card:#FFFFFF;--line:#E3E3E3;
+  --acc:#990066;--acc-d:#7A0052;--acc-soft:#F3E3EC;--muted-soft:#F1F1F1;
+  --hi:#B3261E;--hi-soft:#FBE7E5;--hi-line:#EFC7C3;
+  --ok2:#2E7D53;--ok-soft2:#E4F3EA;--ok-line2:#BFE3CC;
+  --warn:#95590A;--warn-soft:#FBEEDA;--warn-line:#EFD6A6;
+  color:var(--ink);
+}
+.stage .topbar{height:60px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 26px}
+.stage .brand{display:flex;align-items:center;gap:9px;font-size:14.5px;font-weight:700}
+.stage .crumb{color:var(--muted);font-size:13px;font-weight:400}
+.stage .steps5{display:flex;gap:5px}
+.stage .steps5 span{height:28px;padding:0 12px;border-radius:14px;font-size:11.5px;display:flex;align-items:center;background:var(--muted-soft);color:var(--muted)}
+.stage .steps5 span.on{background:var(--acc-d);color:#fff;font-weight:700}
+.stage .who{display:flex;align-items:center;gap:8px;border-left:1px solid var(--line);padding-left:16px}
+.stage .who .av{width:28px;height:28px;border-radius:50%;background:var(--acc-soft);color:var(--acc-d);display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700}
+.stage .who .name{font-size:12px;font-weight:700}
+.stage .who .role{font-size:10.5px;color:var(--muted)}
+
+.stage .card{background:var(--card);border:1px solid var(--line);border-radius:12px}
+.stage .lbl{font-size:12px;color:var(--ink-2);font-weight:600;display:block;margin-bottom:5px}
+.stage .fld{width:100%;height:40px;border:1px solid var(--line);border-radius:7px;padding:0 12px;font-size:13.5px;font-family:"Sarabun",sans-serif;color:var(--ink);background:#fff}
+.stage .fld:disabled,.stage .fld[readonly]{background:var(--muted-soft);color:var(--ink-2)}
+.stage textarea.fld{height:64px;resize:none;padding:10px 12px;font-family:"Sarabun",sans-serif}
+.stage select.fld{background:#fff}
+.stage .seg{display:flex;gap:6px}
+.stage .seg .opt{flex:1;min-height:38px;border:1px solid var(--line);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--ink-2);cursor:pointer;text-align:center;padding:4px 6px;line-height:1.3;background:#fff}
+.stage .seg .opt.on{border:1.5px solid var(--acc);background:var(--acc-soft);color:var(--acc-d);font-weight:700}
+.stage .sec-title{font-size:13.5px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.stage .sec-num{width:19px;height:19px;border-radius:50%;background:var(--acc-d);color:#fff;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stage .btn{height:46px;border:none;border-radius:9px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:"Sarabun",sans-serif}
+.stage .btn:disabled{opacity:.45;cursor:not-allowed}
+.stage .btn-p{background:var(--acc-d);color:#fff}
+.stage .btn-s{height:40px;background:#fff;color:var(--ink-2);border:1px solid var(--line);font-size:12.5px;border-radius:9px;cursor:pointer;font-family:"Sarabun",sans-serif}
+.stage .pill{font-size:11px;padding:4px 10px;border-radius:11px;font-weight:700}
+.stage .chk-row{display:flex;align-items:center;gap:9px;padding:11px 15px;border-radius:9px;cursor:pointer}
+.stage .chk-box{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--acc);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#fff}
+.stage .chk-box.on{background:var(--acc-d);border-color:var(--acc-d)}
+.stage .note{font-size:11px;color:var(--muted);line-height:1.6}
+.stage .err{font-size:12px;color:var(--hi);font-weight:600;margin-top:2px}
+.stage table.plist{width:100%;border-collapse:collapse;font-size:13px}
+.stage table.plist th{text-align:left;font-size:11px;color:var(--muted);font-weight:700;padding:10px 14px;background:var(--muted-soft);border-bottom:1px solid var(--line)}
+.stage table.plist td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+.stage table.plist tr:last-child td{border-bottom:none}
+</style>
+
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <div class="wordmark"><span class="name">T-POSE Corp</span><span class="desc">MALA Risk Screening</span></div>
+    </div>
+    <div class="controls">
+      <label class="toggle">
+        <input type="checkbox" id="explainToggle" checked onchange="setExplain(this.checked)">
+        <span class="sw"></span>
+        โหมดอธิบาย
+      </label>
+      <button class="ghost-btn" onclick="restart()">↺ เริ่มใหม่</button>
+    </div>
+  </div>
+
+  <div class="rail-outer"><div class="rail" id="rail"></div></div>
+
+  <div class="stage-layout">
+    <div class="stage-col">
+      <div class="stage-outer" id="stageOuter">
+        <div class="stage-scaler" id="stageScaler">
+          <div class="stage" id="stage"></div>
+        </div>
+      </div>
+    </div>
+    <div class="explain-col" id="explainCol"></div>
+  </div>
+</div>
+
+<script>
+const RAIL_LABELS = ['เกริ่นนำ','เข้าสู่ระบบ','ค้นหา / เพิ่มผู้ป่วย','แบบประเมิน','ผลประเมิน','แจ้งเตือน / คำแนะนำ','ยืนยันปิดเคส','สรุป'];
+
+const PATIENTS = {
+  p1: {id:'p1', name:'นาง สมหญิง จ.', hn:'67-014822', sex:'หญิง', age:68, dm:'เบาหวานชนิดที่ 2', weight:52.0, height:158, egfr:38, egfrDate:'12 มิ.ย. 2569', dose:2000, alcohol:'occasional', tr:{vomit:true, intake:false, nsaid:false, herb:false}, isNew:false, statusTag:{text:'ยังไม่คัดกรองเดือนนี้', kind:'warn'}},
+  p2: {id:'p2', name:'นาง ทองสุข ว.', hn:'67-021355', sex:'หญิง', age:61, dm:'เบาหวานชนิดที่ 2', weight:63.0, height:160, egfr:68, egfrDate:'2 ก.ค. 2569', dose:1000, alcohol:'none', tr:{vomit:true, intake:false, nsaid:false, herb:false}, isNew:false, statusTag:{text:'ไม่เสี่ยง', kind:'ok'}},
+  p4: {id:'p4', name:'นาย สมชาย ก.', hn:'67-018204', sex:'ชาย', age:70, dm:'เบาหวานชนิดที่ 2', weight:65.0, height:165, egfr:82, egfrDate:'20 ส.ค. 2569', dose:1000, alcohol:'none', tr:{vomit:false, intake:false, nsaid:false, herb:false}, isNew:false, statusTag:{text:'ยังไม่คัดกรองเดือนนี้', kind:'warn'}},
+  p3: {id:'p3', name:'นาย ประยูร ส.', hn:'67-009117', sex:'ชาย', age:74, dm:'เบาหวานชนิดที่ 2', historyOnly:true, statusTag:{text:'เสี่ยงมาก (ส่งต่อรพ แล้ว)', kind:'hi'}},
+  p5: {id:'p5', name:'นาง บัวลอย พ.', hn:null, sex:'หญิง', age:65, dm:'เบาหวานชนิดที่ 2', isNew:true, statusTag:{text:'รอ HN จาก รพ. (เพิ่มใหม่)', kind:'muted'}}
+};
+const PATIENT_ORDER = ['p1','p3','p2','p4','p5'];
+
+const state = {
+  phase:'intro',
+  explain:true,
+  facility:'รพ.สต.บ้านดู่',
+  role:'พยาบาล',
+  patient:null,
+  form:null,
+  result:null,
+  ackAdvice:false,
+  ackConfirm:false,
+  confirmNote:'',
+  historyNoteOpen:false,
+  search:'',
+  err:''
+};
+
+function railIndex(phase){
+  return {intro:0, login:1, search:2, addPatient:2, riskform:3, result:4, referral:5, recommendation:5, confirm:6, done:7}[phase] ?? 0;
+}
+
+function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstChild; }
+function esc(s){ return (s===null||s===undefined) ? '' : String(s); }
+
+function maxDoseForEgfr(egfr){
+  if(egfr===null || egfr===undefined || egfr==='') return null;
+  if(egfr < 30) return 0;
+  if(egfr < 45) return 1000;
+  return 2000;
+}
+function bmiOf(f){
+  if(!f || !f.weight || !f.height) return null;
+  const h = f.height/100;
+  return f.weight / (h*h);
+}
+function alcoholScore(a){ return a==='heavy'?2 : a==='regular'?1 : 0; }
+function roleTitle(r){ return {'พยาบาล':'พยาบาลวิชาชีพ','เภสัชกร':'เภสัชกร','แพทย์':'แพทย์'}[r] || r; }
+function alcoholLabel(a){
+  return {none:'ไม่ดื่มเลย', occasional:'ดื่มเป็นครั้งคราว (≤1 ครั้ง/สัปดาห์)', regular:'ดื่มประจำ (≥3 ครั้ง/สัปดาห์)', heavy:'ดื่มหนัก (≥5 แก้ว/ครั้ง)'}[a] || a;
+}
+
+function computeResult(f){
+  const bmi = bmiOf(f);
+  const maxDose = maxDoseForEgfr(f.egfr);
+  const doseOk = maxDose!==null && maxDose>0 && f.dose!==null && f.dose<=maxDose;
+  const sEgfr = (f.egfr!==null && f.egfr<60) ? 1:0;
+  const sBmi = (bmi!==null && bmi<23) ? 2:0;
+  const sAlc = alcoholScore(f.alcohol);
+  const score = sEgfr+sBmi+sAlc;
+  const triggerList = [
+    {key:'vomit', label:'อาเจียนหรือท้องเสียในช่วงที่ผ่านมา', on:!!f.tr.vomit},
+    {key:'intake', label:'ทานอาหารได้น้อยลงต่อเนื่อง 1–2 วัน', on:!!f.tr.intake},
+    {key:'nsaid', label:'กินยาแก้ปวด/แก้อักเสบ (NSAIDs) หรือยาชุด', on:!!f.tr.nsaid},
+    {key:'herb', label:'กินยาต้ม ยาหม้อ สมุนไพร หรืออาหารเสริม', on:!!f.tr.herb}
+  ];
+  const triggerCount = triggerList.filter(t=>t.on).length;
+  const isAlert = !doseOk || score>=2;
+  return {bmi, maxDose, doseOk, sEgfr, sBmi, sAlc, score, triggerList, triggerCount, isAlert};
+}
+
+function setExplain(v){ state.explain=v; render(); }
+
+function restart(){
+  state.phase='intro'; state.patient=null; state.form=null; state.result=null;
+  state.ackAdvice=false; state.ackConfirm=false; state.confirmNote=''; state.search=''; state.err='';
+  render();
+}
+
+function goPhase(p){ state.phase=p; state.err=''; render(); }
+
+function jumpRail(i){
+  const cur = railIndex(state.phase);
+  if(i>cur) return;
+  const map = {0:'intro',1:'login',2:'search',3:'riskform',4:'result',5: state.result ? (state.result.isAlert?'referral':'recommendation') : 'result', 6:'confirm', 7:'done'};
+  if(i===5 && !state.result) return;
+  if(i>=3 && !state.form) return;
+  goPhase(map[i]);
+}
+
+function doLogin(){ goPhase('search'); }
+
+function selectPatient(id){
+  const p = PATIENTS[id];
+  if(p.historyOnly){ state.historyNoteOpen = state.historyNoteOpen===id ? false : id; render(); return; }
+  if(p.isNew){ goPhase('addPatient'); return; }
+  state.patient = p;
+  state.form = {
+    weight:p.weight, height:p.height, egfr:p.egfr, egfrDate:p.egfrDate, dose:p.dose,
+    alcohol:p.alcohol, tr:{...p.tr}
+  };
+  state.err='';
+  goPhase('riskform');
+}
+
+function submitAddPatient(){
+  const name = document.getElementById('npName').value.trim() || PATIENTS.p5.name;
+  const sex = document.getElementById('npSex').value;
+  const dob = document.getElementById('npDob').value.trim();
+  const hn = document.getElementById('npHn').value.trim();
+  if(!dob){ state.err='กรุณากรอกวันเกิด เพื่อกันจับคู่ผู้ป่วยผิดคน'; render(); return; }
+  state.patient = {id:'p5new', name, hn: hn||null, sex, age:'—', dm:'เบาหวานชนิดที่ 2', isNew:true};
+  state.form = {weight:null, height:null, egfr:null, egfrDate:null, dose:null, alcohol:'none', tr:{vomit:false,intake:false,nsaid:false,herb:false}};
+  state.err='';
+  goPhase('riskform');
+}
+
+function updateForm(field, val){
+  if(field==='weight' || field==='height' || field==='dose' || field==='egfr'){
+    state.form[field] = val===''? null : Number(val);
+  } else {
+    state.form[field] = val;
+  }
+  if(field==='weight' || field==='height'){
+    const el = document.getElementById('bmi-val');
+    if(el){ const bmi = bmiOf(state.form); el.textContent = bmi? bmi.toFixed(1)+' kg/m²' : '—'; }
+  } else if(field==='egfr'){
+    const el = document.getElementById('egfr-meter-slot');
+    if(el){ el.innerHTML = state.form.egfr!==null? egfrMeter(state.form.egfr,{caption:'ตำแหน่ง eGFR ของผู้ป่วยรายนี้บนมิเตอร์'}) : ''; }
+  }
+  requestAnimationFrame(fitStage);
+}
+function setAlcohol(v){ state.form.alcohol=v; render(); }
+function setTrigger(k, v){ state.form.tr[k]=v; render(); }
+
+function submitRiskForm(){
+  const f = state.form;
+  if(f.weight===null || f.height===null || f.egfr===null || f.dose===null){
+    state.err='กรุณากรอกให้ครบ: น้ำหนัก ส่วนสูง eGFR และขนาดยา ก่อนประมวลผล';
+    render(); return;
+  }
+  state.err='';
+  state.result = computeResult(f);
+  goPhase('result');
+}
+
+function proceedFromResult(){ goPhase(state.result.isAlert ? 'referral' : 'recommendation'); }
+function toggleAckAdvice(){ state.ackAdvice=!state.ackAdvice; render(); }
+function toggleAckConfirm(){ state.ackConfirm=!state.ackConfirm; render(); }
+function updateNote(v){ state.confirmNote=v; }
+function submitConfirm(){ goPhase('done'); }
+
+/* ---------- eGFR meter ---------- */
+function egfrMeter(value, opts){
+  opts = opts||{};
+  const zones = [
+    {min:0, max:30, color:'#B3261E', label:'<30'},
+    {min:30, max:45, color:'#C97A1E', label:'30–44'},
+    {min:45, max:60, color:'#C9B21E', label:'45–59'},
+    {min:60, max:120, color:'#2E7D53', label:'≥60'}
+  ];
+  const total = 120;
+  const bars = zones.map(z=>`<div class="zone" style="width:${(z.max-z.min)/total*100}%;background:${z.color}"></div>`).join('');
+  const pct = value===null||value===undefined ? null : Math.max(0,Math.min(100, value/total*100));
+  const marker = pct===null ? '' : `<div class="marker" style="left:${pct}%"></div>`;
+  const zlabels = zones.map(z=>`<span style="width:${(z.max-z.min)/total*100}%;text-align:center">${z.label}</span>`).join('');
+  return `<div class="egfr-meter"><div class="bar">${bars}${marker}</div><div class="zlabels">${zlabels}</div>${opts.caption? `<div style="font-size:11px;color:var(--shell-muted)">${opts.caption}</div>`:''}</div>`;
+}
+
+/* ---------- explain captions ---------- */
+const CAPTIONS = {
+  intro: {t:'ศัพท์ 2 คำที่ต้องรู้ก่อนเริ่ม', b:'eGFR คือมิเตอร์วัดว่าไตกรองของเสีย/ยาออกจากเลือดได้ดีแค่ไหน ยิ่งต่ำ ไตยิ่งแย่ ยา Metformin ต้องถูกขับออกทางไต ถ้าไตแย่แต่ยังได้ยาขนาดเท่าเดิม ยาจะสะสมจนเป็นพิษ กลายเป็นภาวะกรดคั่งในเลือด (MALA) ระบบนี้เช็คแค่อย่างเดียว: ไตยังไหวกับยาขนาดที่ได้รับอยู่ไหม', w:'58% ของผู้ป่วย MALA จริงในเชียงราย (2566–2568) ได้ยาจาก รพ.สต. ที่ไม่มีเครื่องมือคัดกรองเลย'},
+  login: {t:'1 · เข้าสู่ระบบ', b:'เจ้าหน้าที่หน่วยปฐมภูมิเข้าระบบด้วยบัญชีตัวเอง ระบบบันทึกผู้ใช้ เวลา และหน่วยบริการทุกครั้งที่ล็อกอิน', w:'พ.ร.บ. คอมพิวเตอร์ มาตรา 26 กำหนดให้ต้องเก็บ log การเข้าใช้งานระบบ'},
+  search: {t:'2 · ค้นหาผู้ป่วย', b:'ค้นหาผู้ป่วยที่มาวันนี้ด้วย HN หรือชื่อ ถ้ายังไม่มีในระบบ ให้กดเพิ่มผู้ป่วยใหม่ ลองกดคนไข้คนละแบบดู จะเห็นผลลัพธ์ที่ต่างกันในขั้นถัดไป', w:'หน้านี้แสดงเฉพาะฟิลด์ที่จำเป็นต่อการคัดกรอง ไม่มีเลขบัตรประชาชนหรือข้อมูลติดต่อ เพื่อลดข้อมูลอ่อนไหวที่ไม่จำเป็นตามหลัก PDPA'},
+  addPatient: {t:'2b · เพิ่มผู้ป่วยใหม่', b:'ใช้เลข HN ของโรงพยาบาลแทนเลขบัตรประชาชน และบังคับกรอกวันเกิดคู่กับชื่อ เพื่อกันจับคู่ผู้ป่วยผิดคน (ชื่อไทยซ้ำกันได้บ่อย)', w:'HN ไม่บังคับ เผื่อกรณีผู้ป่วยยังไม่เคยลงทะเบียนกับโรงพยาบาลแม่ข่ายมาก่อน'},
+  riskform: {t:'3 · แบบประเมิน (13 ข้อ)', b:'กลุ่มที่ 1 คือค่าไต (eGFR) กับขนาดยา Metformin ซึ่งเป็นตัวหลักที่บอกว่ายาสะสมเสี่ยงไหม กลุ่มที่ 2 คือปัจจัยเสริมที่ทำให้ไตแย่ลงชั่วคราว (ขาดน้ำ) เช่น แอลกอฮอล์ อาเจียน/ท้องเสีย กินได้น้อยลง หรือยาบางชนิด', w:'eGFR กรอกมือได้เสมอ เพราะเป็นค่าจากผลเลือดที่ต้องส่งแล็บ ไม่ใช่ทุก รพ.สต. เชื่อมระบบกับโรงพยาบาลแม่ข่ายอัตโนมัติ ลองแก้ตัวเลขดูว่าผลเปลี่ยนยังไง'},
+  result: {t:'4 · ผลประเมิน', b:'ระบบเทียบข้อมูลกับเกณฑ์ที่หมอกำหนดไว้ล่วงหน้า เหมือนไฟจราจร 2 สี ไม่ใช่ 3 สีแบบที่คิดไว้ตอนแรก: แดง = ไตรับยาไม่ไหว หรือ Risk Score ถึงเกณฑ์ → ส่งต่อทันที เขียว = ปลอดภัย แต่ถ้ามีปัจจัยเสริมก็ให้คำแนะนำการดูแลตัวเองไปด้วย', w:'คำนวณด้วยกฎที่ รพ. กำหนดไว้ล่วงหน้า ไม่ใช่ AI เกณฑ์ตัวเลขในเดโมนี้เป็น draft รอ รพ. ยืนยันเอกสารให้ตรงกันอีกครั้ง'},
+  referral: {t:'5 · ไฟแดง → ส่งต่อ', b:'ระบบแจ้งเตือนโรงพยาบาลทันที 2 ช่องทางพร้อมกัน คือในแอปและ LINE กลุ่ม บทบาทของเจ้าหน้าที่หน้างานจบตรงนี้ แพทย์ที่โรงพยาบาลรับดูแลผู้ป่วยต่อโดยตรง', w:'การส่งต่อถูกบันทึกใน audit log พร้อมเวลาและผู้ดำเนินการ ตาม พ.ร.บ. คอมพิวเตอร์ มาตรา 26'},
+  recommendation: {t:'5 · ไฟเขียว → คำแนะนำทันที', b:'ระบบสร้างคำแนะนำสั้นๆ ให้ทันที (AI ช่วยเรียบเรียงจากปัจจัยที่พบ) เจ้าหน้าที่ส่งต่อให้ผู้ป่วยได้เลย ไม่ต้องรอแพทย์', w:'เนื้อหาคำแนะนำอ้างอิง Sick Day Rules ที่ทีมแพทย์กำหนดไว้ล่วงหน้า ไม่ใช่สิ่งที่ AI คิดขึ้นเอง AI แค่ช่วยเรียบเรียงคำ'},
+  confirm: {t:'6 · ยืนยันปิดเคส', b:'ขั้นตอนสุดท้าย: ผู้ยืนยันเซ็นชื่ออิเล็กทรอนิกส์รับรองผลการประเมิน ก่อนปิดเคสให้สมบูรณ์', w:'ตาม พ.ร.บ. ธุรกรรมทางอิเล็กทรอนิกส์ มาตรา 9 ระบบจะบันทึกผู้ยืนยัน วันเวลา และเวอร์ชันเอกสารไว้เป็นหลักฐาน แก้ไขภายหลังจะสร้างเวอร์ชันใหม่เสมอ'},
+  done: {t:'สรุป journey', b:'ระบบนี้ทำสิ่งที่ไม่มีใครทำที่ รพ.สต. มาก่อน คือเช็คว่าไตของคนไข้ยังรับยาไหวไหม ก่อนที่จะสายเกินไปจนเกิด MALA แบบที่เจอใน 58% ของเคสจริง', w:'ข้อมูลผลคัดกรองถูกส่งให้ รพ.เชียงรายประชานุเคราะห์เก็บวิเคราะห์อัตโนมัติทุกระดับความเสี่ยง ไม่ใช่แค่เคสที่ส่งต่อ'}
+};
+
+/* ---------- screens ---------- */
+function screenTopbar(activeIdx, crumbExtra){
+  const steps=['ค้นหาผู้ป่วย','กรอกข้อมูล','ผลประเมิน','แจ้งเตือน/คำแนะนำ','ยืนยัน'];
+  return `<div class="topbar">
+    <div class="brand">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A0052" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      MALA Risk Screening
+      <span class="crumb">/ ${esc(state.facility)}${crumbExtra? ' / '+crumbExtra : ''}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:18px">
+      <div class="steps5">${steps.map((s,i)=>`<span class="${i===activeIdx?'on':''}">${i+1} ${s}</span>`).join('')}</div>
+      <div class="who">
+        <div class="av">สศ</div>
+        <div><div class="name">สมศรี ใจดี</div><div class="role">${roleTitle(state.role)}</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenIntro(){
+  return `<div style="min-height:560px;display:flex;flex-direction:column;justify-content:center;padding:64px 72px;gap:26px;background:linear-gradient(160deg,#7A0052,#5C0640)">
+    <div style="color:rgba(255,255,255,.7);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace">ก่อนเริ่ม journey</div>
+    <div style="color:#fff;font-size:30px;font-weight:700;line-height:1.35;max-width:640px">eGFR คือมิเตอร์วัดว่าไตกรองยาออกจากเลือดได้ดีแค่ไหน</div>
+    <div style="color:rgba(255,255,255,.85);font-size:15px;line-height:1.8;max-width:600px">ยาเบาหวาน Metformin ต้องถูกขับออกทางไต ถ้าไตทำงานได้ไม่ดี (eGFR ต่ำ) แต่ยังได้ยาขนาดเท่าเดิม ยาจะสะสมในเลือดจนเป็นพิษ กลายเป็นภาวะกรดคั่งในเลือดที่อันตราย เรียกว่า <b>MALA</b></div>
+    <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:18px 22px;max-width:600px">
+      ${egfrMeterInline(38,'#fff')}
+    </div>
+    <div style="color:#fff;font-size:14px;line-height:1.7;max-width:600px;opacity:.9">ระบบที่จะเริ่มคลิกต่อไปนี้ทำหน้าที่แค่อย่างเดียว: <b>เช็คว่าไตของคนไข้ยังไหวกับยาขนาดที่ได้รับอยู่ไหม แล้วเตือนก่อนจะสายเกินไป</b></div>
+    <button class="btn btn-p" style="width:220px;background:#fff;color:#7A0052" onclick="goPhase('login')">เริ่มดู journey →</button>
+  </div>`;
+}
+function egfrMeterInline(value, textColor){
+  const zones = [{w:25,c:'#F29A94',l:'<30 · ห้ามใช้'},{w:12.5,c:'#E8B36B',l:'30–44 · ลดขนาดยา'},{w:12.5,c:'#E3D46B',l:'45–59 · เฝ้าระวัง'},{w:50,c:'#8FD6AC',l:'≥60 · ปกติ'}];
+  const pct = value/120*100;
+  return `<div style="display:flex;flex-direction:column;gap:8px">
+    <div style="font-size:12px;color:${textColor};opacity:.85">ตัวอย่าง: ผู้ป่วยรายแรกใน journey นี้มี eGFR = ${value} mL/min/1.73m²</div>
+    <div style="position:relative;height:16px;border-radius:8px;overflow:hidden;display:flex">
+      ${zones.map(z=>`<div style="width:${z.w}%;height:100%;background:${z.c}"></div>`).join('')}
+      <div style="position:absolute;top:-4px;left:${pct}%;width:2px;height:24px;background:${textColor}"></div>
+    </div>
+    <div style="display:flex;font-size:10px;color:${textColor};opacity:.75;font-family:'IBM Plex Mono',monospace">
+      ${zones.map(z=>`<div style="width:${z.w}%;text-align:center">${z.l}</div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function screenLogin(){
+  const roles=['พยาบาล','เภสัชกร','แพทย์'];
+  return `<div style="display:flex;min-height:560px">
+    <div style="width:38%;background:var(--acc-d);color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:44px 38px">
+      <div style="display:flex;flex-direction:column;gap:24px">
+        <div style="display:flex;align-items:center;gap:9px">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span style="font-size:12px;letter-spacing:.09em;text-transform:uppercase;opacity:.85">เครือข่ายบริการปฐมภูมิ</span>
+        </div>
+        <div>
+          <div style="font-size:29px;font-weight:700;line-height:1.3">ระบบคัดกรอง<br>ความเสี่ยง MALA</div>
+          <div style="margin-top:12px;font-size:13.5px;line-height:1.7;opacity:.88;max-width:300px">สำหรับบุคลากรทางการแพทย์ในหน่วยบริการปฐมภูมิ เครือข่ายโรงพยาบาลเชียงรายประชานุเคราะห์</div>
+        </div>
+      </div>
+      <div style="font-size:11px;opacity:.7;border-top:1px solid rgba(255,255,255,.22);padding-top:14px">Metformin-Associated Lactic Acidosis Risk Screening</div>
+    </div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:36px">
+      <div style="width:320px;display:flex;flex-direction:column;gap:16px">
+        <div><div style="font-size:20px;font-weight:700">เข้าสู่ระบบ</div><div style="margin-top:4px;font-size:13px;color:var(--muted)">กรอกข้อมูลเพื่อเข้าใช้งานระบบคัดกรอง</div></div>
+        <div><label class="lbl">หน่วยบริการ</label>
+          <select class="fld" onchange="state.facility=this.value">
+            <option${state.facility==='รพ.สต.บ้านดู่'?' selected':''}>รพ.สต.บ้านดู่</option>
+            <option>รพ.สต.นางแล</option>
+            <option>ศูนย์สุขภาพชุมชนเมืองเชียงรายฝั่งหมิ่น</option>
+            <option>ศูนย์สุขภาพชุมชนเมืองเชียงรายฝั่งเจียง</option>
+          </select>
+        </div>
+        <div><label class="lbl">บทบาทผู้ใช้งาน</label>
+          <div class="seg" role="radiogroup" aria-label="บทบาทผู้ใช้งาน">${roles.map(r=>`<div class="opt${r===state.role?' on':''}" role="radio" aria-checked="${r===state.role}" tabindex="0" onclick="state.role='${r}';render()">${r}</div>`).join('')}</div>
+        </div>
+        <div><label class="lbl">ชื่อผู้ใช้งาน</label><input class="fld" value="somsri.n" readonly></div>
+        <div><label class="lbl">รหัสผ่าน</label><input class="fld" type="password" value="********" readonly></div>
+        <button class="btn btn-p" onclick="doLogin()">เข้าสู่ระบบ</button>
+        <div class="note" style="text-align:center">ระบบบันทึกการเข้าใช้งานทุกครั้ง (ผู้ใช้ เวลา หน่วยบริการ)</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function patientRow(p){
+  const kindMap={hi:['var(--hi-soft)','var(--hi)'], ok:['var(--ok-soft2)','var(--ok2)'], warn:['var(--warn-soft)','var(--warn)'], muted:['var(--muted-soft)','var(--muted)']};
+  const [bg,fg]=kindMap[p.statusTag.kind];
+  let actionBtn;
+  if(p.historyOnly){
+    actionBtn = `<button class="btn-s" onclick="selectPatient('${p.id}')">ดูประวัติ</button>`;
+  } else if(p.isNew){
+    actionBtn = `<button class="btn-s" style="background:var(--acc-d);color:#fff;border:none" onclick="selectPatient('${p.id}')">เริ่มคัดกรอง</button>`;
+  } else {
+    actionBtn = `<button class="btn-s" style="background:var(--acc-d);color:#fff;border:none" onclick="selectPatient('${p.id}')">เริ่มคัดกรอง</button>`;
+  }
+  const note = (p.historyOnly && state.historyNoteOpen==='p3') ? `<div style="margin-top:6px;font-size:11.5px;color:var(--muted);background:var(--muted-soft);padding:6px 10px;border-radius:7px">เคสนี้ถูกส่งต่อไปแล้วก่อนหน้า ไม่ได้อยู่ใน journey รอบนี้</div>` : '';
+  return `<tr>
+    <td class="mono" style="color:var(--muted)">${p.hn||'—'}</td>
+    <td style="font-weight:600">${p.name}${note}</td>
+    <td>${p.age}</td>
+    <td style="color:var(--ink-2)">${p.historyOnly||p.isNew?'รพ.สต.บ้านดู่':'รพ.สต.บ้านดู่'}</td>
+    <td><span class="pill" style="background:${bg};color:${fg}">${p.statusTag.text}</span></td>
+    <td style="text-align:right">${actionBtn}</td>
+  </tr>`;
+}
+
+function screenSearch(){
+  const q = state.search.trim().toLowerCase();
+  const rows = PATIENT_ORDER.map(id=>PATIENTS[id]).filter(p=> !q || p.name.toLowerCase().includes(q) || (p.hn||'').toLowerCase().includes(q));
+  return `${screenTopbar(0)}
+  <div style="padding:24px 30px;display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between">
+      <div><div style="font-size:19px;font-weight:700">ค้นหาผู้ป่วย</div><div style="margin-top:3px;font-size:13px;color:var(--muted)">เลือกผู้ป่วยเบาหวานที่รับยา Metformin เพื่อเริ่มคัดกรองความเสี่ยง MALA</div></div>
+      <div style="font-size:12px;color:var(--muted)">8 ก.ย. 2569 · ${esc(state.facility)}</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <input class="fld" id="search-input" style="flex:1" placeholder="ค้นหาด้วย HN หรือชื่อ–สกุล…" value="${esc(state.search)}" oninput="state.search=this.value;render()">
+      <button class="btn-s" style="background:var(--acc-d);color:#fff;border:none;white-space:nowrap;padding:0 16px" onclick="goPhase('addPatient')">+ เพิ่มผู้ป่วยใหม่</button>
+    </div>
+    <div class="card" style="overflow:hidden">
+      <table class="plist">
+        <thead><tr><th>HN</th><th>ชื่อ–สกุล</th><th>อายุ</th><th>หน่วยบริการ</th><th>สถานะคัดกรองล่าสุด</th><th></th></tr></thead>
+        <tbody>${rows.map(patientRow).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">ไม่พบผู้ป่วยที่ค้นหา</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="note">แสดงเฉพาะฟิลด์ที่จำเป็นต่อการคัดกรอง</div>
+  </div>`;
+}
+
+function screenAddPatient(){
+  return `${screenTopbar(0,'เพิ่มผู้ป่วยใหม่')}
+  <div style="padding:26px 30px;display:flex;justify-content:center">
+    <div style="width:480px;display:flex;flex-direction:column;gap:16px">
+      <div><div style="font-size:19px;font-weight:700">เพิ่มผู้ป่วยใหม่</div><div style="margin-top:3px;font-size:13px;color:var(--muted)">กรอกเฉพาะข้อมูลที่จำเป็นต่อการคัดกรอง</div></div>
+      <div class="card" style="padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;gap:12px">
+          <div style="flex:1"><label class="lbl">ชื่อ–นามสกุล *</label><input class="fld" id="npName" value="นาง บัวลอย พ."></div>
+          <div style="width:110px"><label class="lbl">เพศ *</label><select class="fld" id="npSex"><option>หญิง</option><option>ชาย</option></select></div>
+        </div>
+        <div style="display:flex;gap:12px">
+          <div style="flex:1"><label class="lbl">วันเกิด *</label><input class="fld" id="npDob" placeholder="วว/ดด/ปปปป (พ.ศ.)"><div class="note">บังคับกรอกคู่กับชื่อ กันจับคู่ผู้ป่วยผิดคน</div></div>
+          <div style="flex:1"><label class="lbl">HN (ถ้ามี)</label><input class="fld" id="npHn" placeholder="เว้นว่างได้ถ้าเป็นผู้ป่วยใหม่"><div class="note">ใช้แทนเลขบัตรประชาชน ลดข้อมูลอ่อนไหว</div></div>
+        </div>
+        <div><label class="lbl">หน่วยบริการ</label><input class="fld" value="${esc(state.facility)} (auto-fill)" readonly></div>
+      </div>
+      ${state.err? `<div class="err">${state.err}</div>`:''}
+      <div style="display:flex;gap:10px">
+        <button class="btn-s" style="flex:1" onclick="goPhase('search')">ยกเลิก</button>
+        <button class="btn btn-p" style="flex:2" onclick="submitAddPatient()">บันทึกและเริ่มคัดกรอง</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function segOpt(active, label, sub, onclick){
+  return `<div class="opt${active?' on':''}" role="radio" aria-checked="${!!active}" tabindex="0" onclick="${onclick}">${label}${sub?`<br><span style="font-weight:400;font-size:10px">${sub}</span>`:''}</div>`;
+}
+
+function screenRiskForm(){
+  const f = state.form;
+  const bmi = bmiOf(f);
+  return `${screenTopbar(1)}
+  <div style="padding:20px 28px;display:flex;gap:20px">
+    <div style="flex:1;display:flex;flex-direction:column;gap:14px">
+      <div class="card" style="padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:15px;font-weight:700">${esc(state.patient.name)} <span style="font-weight:400;color:var(--muted);font-size:12.5px">· HN ${state.patient.hn||'รอ HN จาก รพ.'}</span></div>
+        <div style="margin-top:2px;font-size:12px;color:var(--muted)">${esc(state.patient.sex)} · อายุ ${esc(state.patient.age)} ปี · ${esc(state.patient.dm)}</div></div>
+        <div style="font-size:11.5px;color:var(--muted)">วันที่ประเมิน: 8 ก.ย. 2569</div>
+      </div>
+      <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:18px">
+        <div>
+          <div class="sec-title"><span class="sec-num">1</span>ข้อมูลพื้นฐาน + ยา (เช็ค dose ตาม CPG)</div>
+          <div style="display:flex;gap:10px">
+            <div style="flex:1"><label class="lbl">น้ำหนัก (กก.)</label><input class="fld" id="f-weight" type="number" value="${f.weight??''}" oninput="updateForm('weight',this.value)"></div>
+            <div style="flex:1"><label class="lbl">ส่วนสูง (ซม.)</label><input class="fld" id="f-height" type="number" value="${f.height??''}" oninput="updateForm('height',this.value)"></div>
+            <div style="flex:1"><label class="lbl">BMI (คำนวณให้)</label><div class="fld" style="display:flex;align-items:center;background:var(--muted-soft);color:var(--ink-2)"><span id="bmi-val">${bmi? bmi.toFixed(1)+' kg/m²':'—'}</span></div></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:10px">
+            <div style="flex:1"><label class="lbl">eGFR ล่าสุด (mL/min/1.73m²)${f.egfrDate?` <span style="color:var(--muted);font-weight:400">(ตรวจ ${f.egfrDate})</span>`:' (กรอกมือเอง ยังไม่มีผลจากแล็บ)'}</label><input class="fld" id="f-egfr" type="number" value="${f.egfr??''}" oninput="updateForm('egfr',this.value)"></div>
+            <div style="flex:1"><label class="lbl">ขนาดยา Metformin ปัจจุบัน (มก./วัน)</label><input class="fld" id="f-dose" type="number" step="250" value="${f.dose??''}" oninput="updateForm('dose',this.value)"></div>
+          </div>
+          <div id="egfr-meter-slot">${f.egfr!==null? egfrMeter(f.egfr,{caption:'ตำแหน่ง eGFR ของผู้ป่วยรายนี้บนมิเตอร์'}) : ''}</div>
+        </div>
+        <div>
+          <div class="sec-title"><span class="sec-num">2</span>ประวัติการดื่มแอลกอฮอล์</div>
+          <div class="seg">
+            ${segOpt(f.alcohol==='none','ไม่ดื่มเลย','',"setAlcohol('none')")}
+            ${segOpt(f.alcohol==='occasional','ดื่มเป็นครั้งคราว','(≤1 ครั้ง/สัปดาห์)',"setAlcohol('occasional')")}
+            ${segOpt(f.alcohol==='regular','ดื่มประจำ','(≥3 ครั้ง/สัปดาห์)',"setAlcohol('regular')")}
+            ${segOpt(f.alcohol==='heavy','ดื่มหนัก','(≥5 แก้ว/ครั้ง)',"setAlcohol('heavy')")}
+          </div>
+        </div>
+        <div>
+          <div class="sec-title"><span class="sec-num">3</span>อาการและปัจจัยกระตุ้น (Sick Day Rule triggers)</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${triggerRow('vomit','มีอาการอาเจียนหรือท้องเสียในช่วงที่ผ่านมาหรือไม่?',f)}
+            ${triggerRow('intake','ทานอาหารไม่ได้/ทานได้น้อยลงต่อเนื่อง 1–2 วันหรือไม่?',f)}
+            ${triggerRow('nsaid','กินยาแก้ปวด/แก้อักเสบ (NSAIDs) หรือยาชุดบ้างหรือไม่?',f)}
+            ${triggerRow('herb','กินยาต้ม ยาหม้อ สมุนไพร หรืออาหารเสริมบ้างหรือไม่?',f)}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="width:250px;flex-shrink:0;display:flex;flex-direction:column;gap:12px">
+      <div class="card" style="background:var(--acc-soft);border-color:#D5A6BD;padding:14px 16px">
+        <div style="font-size:12px;font-weight:700;color:var(--acc-d);margin-bottom:5px">เกี่ยวกับแบบประเมินนี้</div>
+        <div style="font-size:12px;line-height:1.65;color:var(--ink-2)">อ้างอิงเอกสารเกณฑ์จริงที่ รพ. ส่งมา ยังเป็นสถานะ "draft" รอทีมแพทย์รับรอง</div>
+      </div>
+      <div class="card" style="padding:14px 16px">
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px">ระบบจะตรวจ 3 อย่าง</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:11.5px;color:var(--ink-2);line-height:1.55">
+          <div>· Dose Metformin เหมาะสมกับ eGFR ตาม CPG ไหม</div>
+          <div>· Risk Score จาก eGFR/BMI/แอลกอฮอล์ ถึงเกณฑ์แจ้งเตือนไหม (≥2)</div>
+          <div>· เข้าเงื่อนไข Sick Day Rule ข้อไหนบ้าง</div>
+        </div>
+      </div>
+      ${state.err? `<div class="err">${state.err}</div>`:''}
+      <div style="flex:1"></div>
+      <button class="btn btn-p" onclick="submitRiskForm()">ประมวลผลความเสี่ยง MALA</button>
+      <button class="btn-s" onclick="goPhase('search')">← กลับไปค้นหาผู้ป่วย</button>
+    </div>
+  </div>`;
+}
+function triggerRow(key,label,f){
+  const on = !!f.tr[key];
+  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)">
+    <span style="font-size:13px;color:var(--ink-2)">${label}</span>
+    <div class="seg" style="width:140px">
+      ${segOpt(!on,'ไม่ใช่','',`setTrigger('${key}',false)`)}
+      ${segOpt(on,'ใช่','',`setTrigger('${key}',true)`)}
+    </div>
+  </div>`;
+}
+
+function screenResult(){
+  const r = state.result, f=state.form;
+  const isAlert = r.isAlert;
+  const bannerBg = isAlert?'var(--hi-soft)':'var(--ok-soft2)', bannerLine=isAlert?'var(--hi-line)':'var(--ok-line2)', bannerStrong=isAlert?'var(--hi)':'var(--ok2)';
+  const bannerLabel = isAlert ? 'แจ้งเตือนแล้ว (Alert)' : 'ไม่แจ้งเตือน (No Alert)';
+  const reasons = [];
+  if(isAlert){
+    if(!r.doseOk) reasons.push('ยาเกินขนาดที่ไตรับไหว');
+    if(r.score>=2) reasons.push(`คะแนนความเสี่ยงถึงเกณฑ์ (${r.score} คะแนน)`);
+  } else {
+    reasons.push('ขนาดยาเหมาะสมกับไต');
+    reasons.push('คะแนนความเสี่ยงไม่ถึงเกณฑ์');
+    if(r.triggerCount>0) reasons.push(`พบปัจจัยเสริม ${r.triggerCount} ข้อ`);
+  }
+  return `${screenTopbar(2)}
+  <div style="padding:22px 28px;display:flex;gap:20px">
+    <div style="flex:1;display:flex;flex-direction:column;gap:14px">
+      <div class="card" style="background:${bannerBg};border-color:${bannerLine};padding:18px 22px;display:flex;align-items:center;gap:16px">
+        <div style="width:48px;height:48px;border-radius:50%;background:${bannerStrong};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${isAlert?'<path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>':'<path d="M20 6L9 17l-5-5"/>'}</svg>
+        </div>
+        <div><div style="font-size:11.5px;font-weight:700;color:${bannerStrong};text-transform:uppercase;letter-spacing:.04em">${bannerLabel}</div>
+        <div style="margin-top:3px;font-size:17px;font-weight:700">${esc(state.patient.name)}</div>
+        <div style="margin-top:7px;display:flex;flex-wrap:wrap;gap:6px">${reasons.map(x=>`<span style="font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:10px;background:rgba(255,255,255,.65);border:1px solid ${bannerLine};color:${bannerStrong}">${x}</span>`).join('')}</div></div>
+      </div>
+      <div class="card" style="padding:16px 20px">
+        <div style="font-size:13.5px;font-weight:700;margin-bottom:10px">1. Dose Metformin vs. eGFR (CPG)</div>
+        <div style="display:flex;justify-content:space-between;font-size:13px">
+          <span style="color:var(--ink-2)">eGFR ${f.egfr} mL/min/1.73m² → ควร ≤ ${r.maxDose ?? 0} มก./วัน (ปัจจุบันใช้ ${f.dose} มก./วัน)</span>
+          <span style="color:${r.doseOk?'var(--ok2)':'var(--hi)'};font-weight:700;font-size:12px;white-space:nowrap;margin-left:12px">${r.doseOk?'เหมาะสม':'ไม่เหมาะสม'}</span>
+        </div>
+      </div>
+      <div class="card" style="padding:16px 20px">
+        <div style="font-size:13.5px;font-weight:700;margin-bottom:10px">2. MALA Risk Score (eGFR / BMI / แอลกอฮอล์)</div>
+        <div style="display:flex;flex-direction:column">
+          <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px"><span style="color:var(--ink-2)">eGFR &lt; 60 (${f.egfr})</span><span style="font-weight:700">+${r.sEgfr} คะแนน</span></div>
+          <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px"><span style="color:var(--muted)">BMI &lt; 23 (${r.bmi?r.bmi.toFixed(1):'—'})</span><span style="font-weight:700">+${r.sBmi} คะแนน</span></div>
+          <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:13px"><span style="color:var(--muted)">${alcoholLabel(f.alcohol)}</span><span style="font-weight:700">+${r.sAlc} คะแนน</span></div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0 0;margin-top:5px;border-top:1px solid var(--line);font-size:13.5px"><span style="font-weight:700">รวม</span><span style="font-weight:700;color:${bannerStrong}">${r.score} (เกณฑ์แจ้งเตือน ≥2)</span></div>
+        </div>
+      </div>
+      <div class="card" style="padding:16px 20px">
+        <div style="font-size:13.5px;font-weight:700;margin-bottom:10px">3. Sick Day Rule triggers</div>
+        ${r.triggerList.map(t=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px"><span style="color:${t.on?'var(--ink-2)':'var(--muted)'}">${t.label}</span><span style="font-weight:700;color:${t.on?'#C97A1E':'var(--muted)'}">${t.on?'พบ':'ไม่พบ'}</span></div>`).join('')}
+      </div>
+    </div>
+    <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:12px">
+      <div class="card" style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:12px;font-weight:700;color:var(--acc-d)">สถานะระบบ</div>
+        <div style="font-size:12.5px;font-weight:700;color:${bannerStrong}">${isAlert?'ระบบแจ้งเตือนโรงพยาบาลแม่ข่ายแล้ว':'ไม่เข้าเกณฑ์แจ้งเตือน ระบบสร้างคำแนะนำให้แล้ว'}</div>
+        <div style="font-size:12px;line-height:1.65;color:var(--ink-2)">${isAlert?'แพทย์/พยาบาลที่ รพ.เชียงรายประชานุเคราะห์จะรับดูแลผู้ป่วยต่อโดยตรง':'AI ช่วยสังเคราะห์คำแนะนำ Sick Day Rules ให้หน้างานนำไปแจ้งผู้ป่วยได้ทันที'}</div>
+        <div style="font-size:11px;line-height:1.55;color:var(--ink-2);background:var(--muted-soft);border-radius:8px;padding:8px 10px">คำนวณด้วยกฎที่ รพ. กำหนดไว้ล่วงหน้า (ไม่ใช่ AI)</div>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn btn-p" style="background:${bannerStrong}" onclick="proceedFromResult()">ดำเนินการต่อ</button>
+      <button class="btn-s" onclick="goPhase('riskform')">ย้อนกลับไปแก้ไขข้อมูล</button>
+    </div>
+  </div>`;
+}
+
+function screenReferral(){
+  return `${screenTopbar(3)}
+  <div style="padding:22px 28px;display:flex;justify-content:center">
+    <div style="width:520px;display:flex;flex-direction:column;gap:14px">
+      <div class="card" style="padding:13px 18px;border-left:4px solid var(--hi);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px"><b>${state.patient.name}</b> <span style="color:var(--muted)">· HN ${state.patient.hn||'—'}</span></div>
+        <span class="pill" style="background:var(--muted-soft);color:var(--ink-2);display:inline-flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:var(--hi);flex-shrink:0"></span>แจ้งเตือนแล้ว (Alert)</span>
+      </div>
+      <div class="card" style="background:var(--hi-soft);border-color:var(--hi-line);padding:26px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+        <div style="width:56px;height:56px;border-radius:50%;background:var(--hi);display:flex;align-items:center;justify-content:center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </div>
+        <div><div style="font-size:17px;font-weight:700">แจ้งเตือน รพ.เชียงรายประชานุเคราะห์แล้ว</div><div style="margin-top:3px;font-size:12px;color:var(--ink-2)">8 ก.ย. 2569, 09:14 น. · จาก ${esc(state.facility)}</div></div>
+        <div style="display:flex;gap:8px">
+          <span style="font-size:11.5px;padding:4px 10px;border-radius:11px;background:#fff;color:var(--hi);font-weight:700;border:1px solid var(--hi-line)">✓ ในแอป: ส่งแล้ว</span>
+          <span style="font-size:11.5px;padding:4px 10px;border-radius:11px;background:#fff;color:var(--hi);font-weight:700;border:1px solid var(--hi-line)">✓ LINE กลุ่ม MALA: ส่งแล้ว</span>
+        </div>
+        <span style="font-size:11.5px;padding:4px 10px;border-radius:11px;background:#fff;color:var(--hi);font-weight:700;border:1px solid var(--hi-line)">สถานะ: รอโรงพยาบาลรับเรื่อง</span>
+      </div>
+      <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:9px">
+        <div style="font-size:13px;font-weight:700">ขั้นตอนถัดไป</div>
+        <div style="font-size:13px;color:var(--ink-2);line-height:1.6"><b style="color:var(--ink)">1.</b> แพทย์/พยาบาลที่โรงพยาบาลรับดูแลผู้ป่วยต่อโดยตรง</div>
+        <div style="font-size:13px;color:var(--ink-2);line-height:1.6"><b style="color:var(--ink)">2.</b> บทบาทของเจ้าหน้าที่หน้างานจบที่การส่งต่อนี้ สิ่งที่ต้องทำต่อคือยืนยันปิดเคส</div>
+      </div>
+      <button class="btn btn-p" onclick="goPhase('confirm')">ดำเนินการต่อ</button>
+    </div>
+  </div>`;
+}
+
+function screenRecommendation(){
+  const r = state.result;
+  const facts = ['ขนาดยาเหมาะสมกับไต', 'คะแนนความเสี่ยงไม่ถึงเกณฑ์'];
+  if(r.triggerCount>0) facts.push(`พบปัจจัยเสริม ${r.triggerCount} ข้อ`);
+  const specific = [];
+  if(r.triggerList.find(t=>t.key==='vomit'&&t.on)) specific.push('หยุดยา Metformin ชั่วคราวถ้าท้องเสีย/อาเจียน จนกว่าจะกลับมาปกติ');
+  if(r.triggerList.find(t=>t.key==='intake'&&t.on)) specific.push('พยายามทานอาหารและดื่มน้ำให้ใกล้เคียงปกติที่สุด หากทานได้น้อยลงต่อเนื่องให้รีบมาพบเจ้าหน้าที่');
+  if(r.triggerList.find(t=>t.key==='nsaid'&&t.on)) specific.push('เลี่ยงยาแก้ปวดกลุ่ม NSAIDs ช่วงนี้ ใช้พาราเซตามอลแทนถ้าเลี่ยงได้');
+  if(r.triggerList.find(t=>t.key==='herb'&&t.on)) specific.push('เลี่ยงยาต้ม ยาหม้อ สมุนไพร หรืออาหารเสริมที่ไม่ทราบส่วนผสมชัดเจน');
+  const baseline = ['ดื่มน้ำให้เพียงพอ 6–8 แก้วต่อวัน','สังเกตอาการเตือน: หายใจหอบลึก ปวดเมื่อยกล้ามเนื้อมาก อ่อนเพลียผิดปกติ คลื่นไส้ ถ้าพบให้มา รพ.สต. ทันที','นัดตรวจ eGFR ซ้ำตามรอบปกติ'];
+  const lines = specific.length? [...specific, ...baseline] : ['ไม่พบปัจจัยกระตุ้นเพิ่มเติมในแบบประเมินนี้ ให้คำแนะนำทั่วไปเพื่อป้องกันไว้ก่อน', ...baseline];
+  return `${screenTopbar(3)}
+  <div style="padding:22px 28px;display:flex;justify-content:center">
+    <div style="width:520px;display:flex;flex-direction:column;gap:14px">
+      <div class="card" style="padding:13px 18px;border-left:4px solid var(--ok2);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px"><b>${state.patient.name}</b> <span style="color:var(--muted)">· HN ${state.patient.hn||'—'}</span></div>
+        <span class="pill" style="background:var(--muted-soft);color:var(--ink-2);display:inline-flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:var(--ok2);flex-shrink:0"></span>ไม่แจ้งเตือน (No Alert)</span>
+      </div>
+      <div class="card" style="background:var(--ok-soft2);border-color:var(--ok-line2);padding:26px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+        <div style="width:56px;height:56px;border-radius:50%;background:var(--ok2);display:flex;align-items:center;justify-content:center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <div style="font-size:17px;font-weight:700">สร้างคำแนะนำให้ผู้ป่วยแล้ว</div>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px">${facts.map(x=>`<span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:10px;background:#fff;border:1px solid var(--line);color:var(--ink-2)">${x}</span>`).join('')}</div>
+      </div>
+      <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:13.5px;font-weight:700">คำแนะนำสำหรับผู้ป่วย (Sick Day Rules)</div>
+          <span style="font-size:10.5px;padding:3px 9px;border-radius:10px;background:var(--acc-soft);color:var(--acc-d);font-weight:700">AI GENERATED</span></div>
+        <div style="background:var(--muted-soft);border-radius:9px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.7">
+          ${lines.map(l=>`<div style="display:flex;gap:7px"><span style="color:var(--acc-d);font-weight:700">·</span>${l}</div>`).join('')}
+        </div>
+        <div class="note">สังเคราะห์จากปัจจัยที่พบในแบบประเมิน อ้างอิง Sick Day Rules ที่ทีมแพทย์กำหนดไว้ล่วงหน้า</div>
+      </div>
+      <div class="chk-row" style="background:var(--muted-soft)" role="checkbox" aria-checked="${state.ackAdvice}" tabindex="0" onclick="toggleAckAdvice()">
+        <div class="chk-box${state.ackAdvice?' on':''}" style="border-color:var(--ok2)${state.ackAdvice?';background:var(--ok2)':''}">${state.ackAdvice?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>':''}</div>
+        <span style="font-size:12.5px;color:var(--ink-2)">ข้าพเจ้าได้แจ้งคำแนะนำนี้ให้ผู้ป่วยรับทราบแล้ว</span>
+      </div>
+      <button class="btn btn-p" ${state.ackAdvice?'':'disabled'} onclick="goPhase('confirm')">ดำเนินการต่อ</button>
+    </div>
+  </div>`;
+}
+
+function screenConfirm(){
+  const isAlert = state.result.isAlert;
+  const tierLabel = isAlert?'แจ้งเตือนแล้ว (Alert)':'ไม่แจ้งเตือน (No Alert)';
+  const tierBg = isAlert?'var(--hi-soft)':'var(--ok-soft2)', tierFg=isAlert?'var(--hi)':'var(--ok2)';
+  const summaryLine = isAlert? 'แจ้งเตือนโรงพยาบาลแม่ข่าย (แอป + LINE) แล้ว':'แจ้งคำแนะนำ Sick Day Rules ให้ผู้ป่วยแล้ว';
+  const summaryDetail = isAlert? 'แพทย์/พยาบาลที่ รพ. รับดูแลผู้ป่วยต่อโดยตรง การยืนยันนี้เป็นเพียงการปิดเคสในระบบของหน่วยบริการปฐมภูมิ':'ไม่เข้าเกณฑ์แจ้งเตือน หน้างานแจ้งผู้ป่วยเองทันที ไม่มีแพทย์เกี่ยวข้องในขั้นตอนนี้';
+  const defaultNote = isAlert? 'ผู้ป่วยมีอาการท้องเสียตั้งแต่ 3 วันก่อน แจ้งเตือน รพ. พร้อมญาตินำส่งภายในวันนี้':'แจ้งผู้ป่วยและญาติเรื่อง Sick Day Rules แล้ว นัดตรวจ eGFR ซ้ำตามรอบปกติ';
+  if(!state.confirmNote) state.confirmNote = defaultNote;
+  return `${screenTopbar(4)}
+  <div style="padding:22px 28px;display:flex;justify-content:center">
+    <div style="width:520px;display:flex;flex-direction:column;gap:14px">
+      <div class="card" style="padding:13px 18px;border-left:4px solid ${tierFg};display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px"><b>${state.patient.name}</b> <span style="color:var(--muted)">· HN ${state.patient.hn||'—'}</span></div>
+        <span class="pill" style="background:var(--muted-soft);color:var(--ink-2);display:inline-flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:${tierFg};flex-shrink:0"></span>${tierLabel}</span>
+      </div>
+      <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:9px">
+        <div style="font-size:13.5px;font-weight:700">สรุปสิ่งที่ดำเนินการแล้ว</div>
+        <div style="display:flex;align-items:center;gap:9px;padding:10px 12px;border:1.5px solid ${isAlert?'var(--hi-line)':'var(--ok-line2)'};background:${tierBg};border-radius:9px">
+          <div style="width:15px;height:15px;border-radius:50%;background:${tierFg};display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <span style="font-size:12.5px;font-weight:700;color:${tierFg}">${summaryLine}</span>
+        </div>
+        <div style="font-size:12px;color:var(--ink-2);line-height:1.6">${summaryDetail}</div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-top:2px">
+          <label class="lbl">หมายเหตุเพิ่มเติม</label>
+          <textarea class="fld" oninput="updateNote(this.value)">${esc(state.confirmNote)}</textarea>
+        </div>
+      </div>
+      <div class="card" style="background:var(--acc-soft);border-color:#D5A6BD;padding:16px 18px;display:flex;flex-direction:column;gap:9px">
+        <div style="font-size:12px;font-weight:700;color:var(--acc-d)">การยืนยันผลการประเมิน (ลายมือชื่ออิเล็กทรอนิกส์)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+          <div><div style="color:var(--muted)">ผู้ยืนยัน</div><div style="font-weight:700;margin-top:2px">สมศรี ใจดี · ${roleTitle(state.role)}</div></div>
+          <div><div style="color:var(--muted)">วัน–เวลา</div><div style="font-weight:700;margin-top:2px">8 ก.ย. 2569, 11:35 น.</div></div>
+          <div><div style="color:var(--muted)">หน่วยบริการ</div><div style="font-weight:700;margin-top:2px">${esc(state.facility)}</div></div>
+          <div><div style="color:var(--muted)">เวอร์ชันแบบประเมิน</div><div style="font-weight:700;margin-top:2px">v1.2 (draft)</div></div>
+        </div>
+        <div class="chk-row" style="padding:8px 0 0" role="checkbox" aria-checked="${state.ackConfirm}" tabindex="0" onclick="toggleAckConfirm()">
+          <div class="chk-box${state.ackConfirm?' on':''}">${state.ackConfirm?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>':''}</div>
+          <span style="font-size:12px;color:var(--ink-2)">ข้าพเจ้าขอยืนยันว่าข้อมูลและผลการประเมินนี้ถูกต้อง</span>
+        </div>
+      </div>
+      <button class="btn btn-p" ${state.ackConfirm?'':'disabled'} onclick="submitConfirm()">ยืนยันและบันทึกการตัดสินใจ</button>
+      <div class="note" style="text-align:center">การกดยืนยันถือเป็นการลงลายมือชื่ออิเล็กทรอนิกส์ตาม พ.ร.บ. ธุรกรรมทางอิเล็กทรอนิกส์ มาตรา 9</div>
+    </div>
+  </div>`;
+}
+
+function screenDone(){
+  const isAlert = state.result.isAlert;
+  return `<div style="min-height:520px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:56px 60px;text-align:center">
+    <div style="width:64px;height:64px;border-radius:50%;background:var(--acc-d);display:flex;align-items:center;justify-content:center">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <div style="font-size:22px;font-weight:700">เคสของ ${state.patient.name} ปิดสมบูรณ์แล้ว</div>
+    <div style="max-width:480px;font-size:14px;line-height:1.8;color:var(--ink-2)">
+      เส้นทางที่เพิ่งเดินผ่าน: ล็อกอิน → ค้นหา/เพิ่มผู้ป่วย → กรอกแบบประเมิน 13 ข้อ → ระบบตัดสิน <b>${isAlert?'แจ้งเตือน (แดง)':'ไม่แจ้งเตือน (เขียว)'}</b> → ${isAlert?'ส่งต่อโรงพยาบาลทันที':'ให้คำแนะนำ Sick Day Rules ทันที'} → ยืนยันปิดเคส
+    </div>
+    <div style="max-width:480px;font-size:13.5px;line-height:1.8;color:var(--ink-2);background:var(--acc-soft);border-radius:10px;padding:16px 20px">
+      ระบบนี้ทำสิ่งที่ไม่มีใครทำที่ รพ.สต. มาก่อน คือเช็คว่าไตของคนไข้ยังรับยาไหวไหม ก่อนที่จะสายเกินไปจนเกิด MALA แบบที่เจอใน <b>58%</b> ของเคสจริง
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-s" onclick="goPhase('search')">↺ เริ่มเคสใหม่ (ค้นหาผู้ป่วย)</button>
+      <button class="btn btn-p" onclick="restart()">กลับหน้าแรก</button>
+    </div>
+  </div>`;
+}
+
+function render(){
+  const active = document.activeElement;
+  let focusId=null, selStart=null, selEnd=null;
+  if(active && active.id && document.getElementById('stage').contains(active)){
+    focusId = active.id;
+    if(typeof active.selectionStart === 'number'){ try{ selStart=active.selectionStart; selEnd=active.selectionEnd; }catch(e){} }
+  }
+
+  document.getElementById('explainToggle').checked = state.explain;
+  const rail = document.getElementById('rail');
+  const cur = railIndex(state.phase);
+  rail.innerHTML = RAIL_LABELS.map((lbl,i)=>{
+    let cls = i===cur?'active': i<cur?'done':'';
+    return `<div class="rail-node ${cls}"><div class="line"></div><button class="dot" onclick="jumpRail(${i})" aria-label="ไปที่ขั้นตอน ${lbl}">${i+1}</button><div class="lbl">${lbl}</div></div>`;
+  }).join('');
+
+  const stage = document.getElementById('stage');
+  const fns = {intro:screenIntro, login:screenLogin, search:screenSearch, addPatient:screenAddPatient, riskform:screenRiskForm, result:screenResult, referral:screenReferral, recommendation:screenRecommendation, confirm:screenConfirm, done:screenDone};
+  stage.innerHTML = fns[state.phase]();
+
+  if(focusId){
+    const el = document.getElementById(focusId);
+    if(el){
+      el.focus();
+      if(selStart!==null){ try{ el.setSelectionRange(selStart, selEnd); }catch(e){} }
+    }
+  }
+
+  const explainCol = document.getElementById('explainCol');
+  if(state.explain){
+    const c = CAPTIONS[state.phase];
+    explainCol.style.display='';
+    explainCol.innerHTML = `<div class="explain-card">
+      <div class="tag">คำอธิบาย</div>
+      <h3>${c.t}</h3>
+      <p>${c.b}</p>
+      <div class="why">${c.w}</div>
+    </div>`;
+  } else {
+    explainCol.style.display='none';
+  }
+
+  requestAnimationFrame(fitStage);
+}
+
+function fitStage(){
+  const outer = document.getElementById('stageOuter');
+  const scaler = document.getElementById('stageScaler');
+  const stage = document.getElementById('stage');
+  const w = outer.clientWidth;
+  const scale = Math.min(1, w/1280);
+  scaler.style.transform = `scale(${scale})`;
+  outer.style.height = (stage.offsetHeight*scale) + 'px';
+}
+
+try{
+  const saved = localStorage.getItem('mala-journey-explain');
+  if(saved!==null) state.explain = saved==='1';
+}catch(e){}
+const _setExplain = setExplain;
+setExplain = function(v){ _setExplain(v); try{ localStorage.setItem('mala-journey-explain', v?'1':'0'); }catch(e){} };
+
+render();
+window.addEventListener('resize', ()=>{ clearTimeout(window.__rt); window.__rt=setTimeout(fitStage,80); });
+document.addEventListener('keydown', (e)=>{
+  const role = e.target.getAttribute && e.target.getAttribute('role');
+  if((role==='radio' || role==='checkbox') && (e.key==='Enter' || e.key===' ')){
+    e.preventDefault();
+    e.target.click();
+  }
+});
+</script>
