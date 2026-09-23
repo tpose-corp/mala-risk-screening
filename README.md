@@ -28,7 +28,7 @@ A web app for screening MALA risk, for primary-care front-line staff (who may no
 2. Send every case's data to the hospital to keep for analysis
 3. Alert the hospital (app + LINE) on an alert case, or generate instant advice on a no-alert case
 
-**Out of MVP (stretch):** an AI chatbot (real pain source now — still unclear if staff- or patient-facing), AdminDashboard, automatic HOSxP/HIS integration
+**Out of MVP (stretch):** an AI chatbot for patients to chat with directly (real pain source now, confirmed patient-facing), AdminDashboard, automatic HOSxP/HIS integration
 
 ### User groups
 
@@ -46,7 +46,7 @@ A web app for screening MALA risk, for primary-care front-line staff (who may no
 | Legal requirements (PDPA, Computer Crime Act §26, Electronic Transactions Act §9/26/28) — the agent's compliance rulebook | [`rule.md`](rule.md) |
 | The agent's operating rules for this repo (scope, stack, what never to invent, how to work) | [`CLAUDE.md`](CLAUDE.md) |
 | Original project document from the hospital | `.docs/01-requirements/โครงการ MALA screening - ศูนย์ข้อมูลยา รพศ ชร.docx` |
-| Prototype screens (Claude Design canvas, real 13-item form + binary alert model, still pending real-user testing) | [`.docs/02-design/prototype-v2/`](.docs/02-design/prototype-v2/) |
+| Prototype — click-through demo (real 13-item form + binary alert model, still pending real-user testing) | [`.docs/02-design/prototype-v2/mala-user-journey.html`](.docs/02-design/prototype-v2/mala-user-journey.html) |
 | Deliverables for the W5 User Validation Gate (proposal, backlog, design draft, compliance) | [`.docs/README.md`](.docs/README.md) |
 | Locked scope for this build (MUST/SHOULD/COULD/WON'T) | [`.docs/04-build/scope-lock.md`](.docs/04-build/scope-lock.md) |
 | Sprint 0 setup status + steps | [`.docs/04-build/sprint-0.md`](.docs/04-build/sprint-0.md) |
