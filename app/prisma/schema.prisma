@@ -1,0 +1,124 @@
+// Database blueprint for MALA Risk Screening.
+// Each `model` becomes one table. Prisma reads this file and creates the tables for us.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Staff account. Passwords are stored only as a bcrypt hash (rule.md: never plaintext).
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  displayName  String
+  role         String // "nurse" | "pharmacist" | "doctor" | "admin"
+  facility     String
+  createdAt    DateTime @default(now())
+
+  sessions           Session[]
+  patientsCreated    Patient[]
+  screenings         Screening[] @relation("screener")
+  screeningsConfirmed Screening[] @relation("confirmer")
+  alertsAcknowledged  Screening[] @relation("acknowledger")
+}
+
+// Logged-in session. We keep only a SHA-256 hash of the cookie token, not the token itself.
+model Session {
+  id        String   @id // sha256(token)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// Patient — minimal fields only (intent.md, Sep 8: HN instead of national ID).
+model Patient {
+  id          Int      @id @default(autoincrement())
+  name        String
+  dob         String // Thai Buddhist-era date as entered, e.g. "12/03/2501"
+  sex         String // "หญิง" | "ชาย"
+  hn          String? // optional — new patients may not have one yet
+  facility    String
+  createdAt   DateTime @default(now())
+  createdById Int
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  screenings Screening[]
+}
+
+// One MALA screening = the 13-item form + the rule engine's result + the confirm step.
+model Screening {
+  id         Int      @id @default(autoincrement())
+  patientId  Int
+  patient    Patient  @relation(fields: [patientId], references: [id])
+  screenerId Int
+  screener   User     @relation("screener", fields: [screenerId], references: [id])
+  createdAt  DateTime @default(now())
+
+  // --- form inputs ---
+  weightKg   Float
+  heightCm   Float
+  egfr       Float
+  doseMgDay  Int
+  alcohol    String // summary: "none" | "light" | "heavy" (old rows may hold "occasional" | "regular")
+  // checklist item 9 (MALA_Screening_Checklist.docx): 9.1 drinks? 9.2.1 binge? 9.2.2 regular heavy?
+  drinksAlcohol        Boolean @default(false)
+  bingeDrinking        Boolean @default(false)
+  regularHeavyDrinking Boolean @default(false)
+  vomiting   Boolean
+  lowIntake  Boolean
+  nsaid      Boolean
+  herbal     Boolean
+
+  // --- rule engine output (stored so the record shows exactly what was decided) ---
+  ruleVersion   String
+  bmi           Float
+  maxDoseMgDay  Int // 0 = contraindicated
+  doseCheck     String // "ok" | "exceeds" | "contraindicated"
+  scoreEgfr     Int
+  scoreBmi      Int
+  scoreAlcohol  Int
+  riskScore     Int
+  isAlert       Boolean
+  alertRaisedAt DateTime? // set the moment the result is computed (intent.md: alert must not wait for Confirm)
+  adviceGivenAt DateTime? // staff ticked "advice given to the patient"
+
+  // --- hospital side: in-app alert inbox ---
+  acknowledgedAt   DateTime? // hospital doctor pressed "รับเรื่องแล้ว"
+  acknowledgedById Int?
+  acknowledgedBy   User?     @relation("acknowledger", fields: [acknowledgedById], references: [id])
+
+  // --- confirm / e-signature (ETA §9) ---
+  confirmedAt   DateTime?
+  confirmedById Int?
+  confirmedBy   User?     @relation("confirmer", fields: [confirmedById], references: [id])
+  confirmNote   String?
+
+  // Indexes so the hospital lists stay fast with tens of thousands of screenings.
+  @@index([isAlert, acknowledgedAt])
+  @@index([isAlert, alertRaisedAt])
+  @@index([patientId, createdAt])
+  @@index([createdAt])
+}
+
+// Audit trail (Computer Crime Act §26). Append-only: a database trigger blocks UPDATE/DELETE.
+// `detail` must never contain patient names, lab values, or passwords (rule.md).
+model AuditLog {
+  id       Int      @id @default(autoincrement())
+  at       DateTime @default(now())
+  userId   Int?
+  username String? // snapshot, survives even if the account is later removed
+  action   String // e.g. "login.success", "screening.create"
+  entity   String?
+  entityId Int?
+  detail   String?
+  device   String? // short browser / OS summary, e.g. "Chrome บน Windows". No IP address is stored (team decision).
+
+  @@index([at])
+}

@@ -68,3 +68,4 @@ the hospital's real clinical criteria — not an AI/LLM judgment call. Full cont
   surface the block.
 - Keep commits small and scoped to one backlog item where practical (helps traceability back to
   PBI IDs).
+- ห้ามใช้ `--`, `—` หรือ `·` ต่อท้ายเพื่ออธิบายเพิ่มเติม ทั้งในข้อความบนหน้าจอแอปและในคำตอบ ให้เขียนเป็นประโยคปกติแทน
