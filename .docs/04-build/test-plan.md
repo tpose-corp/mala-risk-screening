@@ -167,8 +167,8 @@ Per task, record: success, time, errors, help given, sticking points, and quotes
 
 ## 8. Real users and session plan
 
-6 sessions planned (3 front-line staff, 3 hospital doctors or pharmacists), one real user each,
-about 30 minutes. This is below the course target of 10; the team tells the instructor in advance.
+10 sessions planned (7 front-line staff, 3 hospital doctors or pharmacists), one real user each,
+about 30 minutes, meeting the course target of 10. Any shortfall is reported to the instructor.
 Classmates and students never count as clinical users. Users appear only as codes (U01, U02, …);
 the booking sheet with dates and units is kept outside the repo.
 
@@ -186,7 +186,7 @@ the booking sheet with dates and units is kept outside the repo.
 5. Interview (5 min)
 6. Enter results the same day
 
-Run one pilot session before 4 November. If time allows, test about 3 users, fix, then test the rest.
+Run one pilot session before 4 November. If time allows, test about 5 users, fix, then test the rest.
 
 ### 8.3 Privacy and consent
 
@@ -218,7 +218,7 @@ Before and after task results are required (portfolio P4). SUS and TAM are optio
 
 | Metric | How it is measured | Reported as |
 |---|---|---|
-| Task success rate | Successful tasks divided by attempts, per task | Percent per task, for example 5 of 6 (83%) |
+| Task success rate | Successful tasks divided by attempts, per task | Percent per task, for example 6 of 7 (86%) |
 | Time on task | Seconds from reading the task to finishing it | Mean and range per task; before time vs UAT-S2 time |
 | Errors | Wrong entries, wrong pages, or wrong answers, one definition for before and after | Mean errors per user |
 | Help needed | Times the user asked for help or was stuck over 60 seconds | Count per task |
@@ -259,7 +259,7 @@ problems. No cause-and-effect claims, and SUS and TAM stay separate.
 | Stage | Start when | Finished when |
 |---|---|---|
 | Functional testing (Section 6) | Build on `main` runs; test data and expected results written | All unit tests pass; every Critical and High case run; no open Critical defect |
-| UAT (4 Nov) | Functional exit met; users booked; consent forms, cards, questionnaires, results sheet ready; pilot done | All 6 planned sessions done, shortfall from 10 reported to the instructor; results, SUS, TAM entered for every session |
+| UAT (4 Nov) | Functional exit met; users booked; consent forms, cards, questionnaires, results sheet ready; pilot done | All 10 planned sessions done, or any shortfall reported to the instructor; results, SUS, TAM entered for every session |
 | Final presentation | UAT results analysed | Top 3 to 5 problems listed with severity; fixes shown with before and after screenshots; no rule engine result disagrees with 6.2 |
 
 ## 11. Defect severity (Nielsen 0 to 4)
