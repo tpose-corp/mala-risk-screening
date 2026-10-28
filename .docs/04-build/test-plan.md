@@ -165,10 +165,61 @@ Everyone gets the same tasks in the same order.
 
 Per task, record: success, time, errors, help given, sticking points, and quotes.
 
+### 7.3 UAT test scripts (step by step)
+
+Users follow these steps **after** the 7.2 tasks, so the scripted steps do not teach them the
+screens before their task times are recorded. The user marks Pass or Fail for each step and can add
+a comment. Button names are quoted in Thai exactly as they appear in the app, with an English gloss.
+Patient data is synthetic. Any Fail is logged as a defect
+(Section 11) with the step ID, for example "A8".
+
+#### Script A: Front-line staff (primary-care nurse)
+
+Synthetic patient: name "ทดสอบ ขั้นตอน", female, born 1 January 2503 (B.E.), weight 55 kg,
+height 160 cm, eGFR 75, Metformin 1000 mg/day, no alcohol, no symptoms or triggers.
+
+| Step | Action | Test data | Expected result | Pass / Fail | Comment |
+|---|---|---|---|---|---|
+| A1 | Open the system website | Link given by the team | The "เข้าสู่ระบบ" (Log in) page of the MALA risk screening system | | |
+| A2 | Enter username and password, then click "เข้าสู่ระบบ" (Log in) | Staff account given by the team | The "ค้นหาผู้ป่วย" (Find patient) page opens | | |
+| A3 | Type the name in the search box, then click "ค้นหา" (Search) | "ทดสอบ ขั้นตอน" | No patient found (not added yet) | | |
+| A4 | Click "+ เพิ่มผู้ป่วยใหม่" (Add new patient) | | The "เพิ่มผู้ป่วยใหม่" (Add new patient) page | | |
+| A5 | Leave every field empty and click "บันทึกและเริ่มคัดกรอง" (Save and start screening) | All fields empty | Nothing is saved; the system shows which fields are required | | |
+| A6 | Enter name, date of birth, and sex, leave HN empty, then click "บันทึกและเริ่มคัดกรอง" (Save and start screening) | Synthetic patient above | Saved; the "แบบคัดกรอง" (Screening form) page opens for this patient | | |
+| A7 | Enter weight and height | 55 kg and 160 cm | BMI is calculated automatically, about 21.5 | | |
+| A8 | Enter a negative eGFR | -5 | A warning says the value cannot be negative | | |
+| A9 | Correct the eGFR and enter the Metformin dose | eGFR 75 and 1000 mg/day | The warning disappears | | |
+| A10 | Answer the alcohol question | "ไม่ดื่ม" (Does not drink) | No follow-up questions about drinking amount appear | | |
+| A11 | Answer all 4 symptom and trigger questions | "ไม่ใช่" (No) for each | All questions answered | | |
+| A12 | Click "ประมวลผลความเสี่ยง MALA" (Calculate MALA risk) | | The "ผลประเมิน" (Result) page shows "แจ้งเตือนแล้ว (Alert)", risk score 2 (risk group, BMI below 23), and the dose is appropriate | | |
+| A13 | Read the "สิ่งที่คุณต้องทำ" (What you need to do) section | | The user can explain the next steps in their own words | | |
+| A14 | Click "ดำเนินการต่อ" (Continue) | | The "แจ้งเตือนและคำแนะนำ" (Alert and advice) page shows the referral hospital was notified and gives Sick Day Rules advice | | |
+| A15 | Tick "ข้าพเจ้าได้แจ้งคำแนะนำนี้ให้ผู้ป่วยรับทราบแล้ว" (I have given this advice to the patient), then click "ดำเนินการต่อ" (Continue) | | The "ยืนยันปิดเคส" (Confirm and close case) page | | |
+| A16 | Tick "ข้าพเจ้าขอยืนยันว่าข้อมูลและผลการประเมินนี้ถูกต้อง" (I confirm this data and result are correct), add a note, then click "ยืนยันและบันทึกการตัดสินใจ" (Confirm and save) | Note: "ทดสอบระบบ" | A pop-up says the case is closed, with the confirmer's name and time; click "ตกลง" (OK) | | |
+| A17 | Go back to "ค้นหาผู้ป่วย" (Find patient) and search the same name | "ทดสอบ ขั้นตอน" | Patient found with status "เสี่ยง (ส่งต่อ รพ. แล้ว)" (At risk, referred to hospital) | | |
+| A18 | Click "ออกจากระบบ" (Log out) | | Back on the "เข้าสู่ระบบ" (Log in) page | | |
+
+#### Script B: Referral hospital doctor
+
+Before the session, the team prepares 3 waiting cases in the system using R-03, R-05, and R-06 from
+Section 6.2.
+
+| Step | Action | Test data | Expected result | Pass / Fail | Comment |
+|---|---|---|---|---|---|
+| B1 | Open the website, enter username and password, then click "เข้าสู่ระบบ" (Log in) | Doctor account given by the team | The "กล่องแจ้งเตือน" (Alert inbox) page opens | | |
+| B2 | Look at the cases under "รอรับเรื่อง" (Waiting) | | Waiting cases are listed with the alert reason, the sending primary-care unit, and the waiting time | | |
+| B3 | Click "ดูเคส" (View case) on any waiting case | | The "รายละเอียดเคส" (Case details) page shows the measured values, result, and triggers found | | |
+| B4 | Look at the "ลำดับเหตุการณ์" (Timeline) section | | Case events are listed in time order, such as screening, alert, and case closed by the primary-care unit | | |
+| B5 | Click "กลับ" (Back), then click "รับเรื่อง" (Acknowledge) on the same case | | The case moves from "รอรับเรื่อง" (Waiting) to "รับเรื่องแล้ว" (Acknowledged) with the doctor's name and time | | |
+| B6 | Open the "ข้อมูลทุกเคส" (All cases) menu | | All screening results from primary-care units in the network are shown | | |
+| B7 | Set the result filter to "แจ้งเตือน" (Alert), then click "ล้างตัวกรอง" (Clear filters) | | Filtered: only alert cases. After clearing: all cases again | | |
+| B8 | Click "ดาวน์โหลด Excel (CSV)" (Download Excel) and open the file | | The file opens in Excel, Thai text is readable, and rows match the web page | | |
+| B9 | Click "ออกจากระบบ" (Log out) | | Back on the "เข้าสู่ระบบ" (Log in) page | | |
+
 ## 8. Real users and session plan
 
 10 sessions planned (7 front-line staff, 3 hospital doctors or pharmacists), one real user each,
-about 30 minutes, meeting the course target of 10. Any shortfall is reported to the instructor.
+about 40 minutes, meeting the course target of 10. Any shortfall is reported to the instructor.
 Classmates and students never count as clinical users. Users appear only as codes (U01, U02, …);
 the booking sheet with dates and units is kept outside the repo.
 
@@ -177,14 +228,15 @@ the booking sheet with dates and units is kept outside the repo.
 - **Moderator:** gets consent, gives tasks one at a time, never helps.
 - **Note-taker:** times tasks and records results and quotes.
 
-### 8.2 Session steps (about 30 minutes)
+### 8.2 Session steps (about 40 minutes)
 
 1. Intro and PDPA consent; ask before any photo or recording (3 min)
 2. Before task, current way (5 min)
-3. Tasks with think-aloud (10 to 15 min)
-4. SUS, then TAM (3 to 6 min)
-5. Interview (5 min)
-6. Enter results the same day
+3. Tasks with think-aloud, Section 7.2 (10 to 15 min)
+4. Step-by-step test script, Section 7.3 (10 min)
+5. SUS, then TAM (3 to 6 min)
+6. Interview (5 min)
+7. Enter results the same day
 
 Run one pilot session before 4 November. If time allows, test about 5 users, fix, then test the rest.
 
