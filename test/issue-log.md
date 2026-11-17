@@ -39,4 +39,4 @@ Source: [`sessions/S01-2026-11-17-hospital-uat.md`](sessions/S01-2026-11-17-hosp
 | T-02 | Lab date calendar opened below the screen edge | 2 | Calendar flips up when there is no room below | `1bf4041` | Team: pass |
 | T-03 | New patient form buttons fell below the screen on small windows | 2 | Full-width form with sticky action bar | `79e89cb` | Team: pass |
 | T-04 | Old live demo on Railway stopped (free trial ended) | 4 | Moved to Vercel + Neon, see `.docs/final/deployment.md` | `ffc5eab` (code), deploy on 17 Nov | Team: live site opens |
-| T-05 | Live site slow: log in 9.1 s, pages 3 to 6 s | 3 | Server code moved to Singapore next to the database (`app/vercel.json`) | Not committed yet at the time of writing | Measured before: [`results/live-speed-2026-11-18.md`](results/live-speed-2026-11-18.md); after: pending |
+| T-05 | Live site slow: log in 9.1 s, pages 3 to 6 s | 3 | Server code moved to Singapore next to the database (`app/vercel.json`) | `f1639cf` (PR #29) | Measured: log in 9.13 s → 1.00 s and 0.54 s, pages 3 to 6 s → under 0.6 s. Pass. [`results/live-speed-2026-11-18.md`](results/live-speed-2026-11-18.md) |
