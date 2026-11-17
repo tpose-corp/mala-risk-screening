@@ -1,5 +1,8 @@
 # .docs — W5 User Validation Gate deliverables
 
+> **Final presentation (18 Nov 2026): start at [`final/README.md`](final/README.md)**, the index of every
+> deliverable from Discover to Deliver. This page below is the historical W5 Gate record.
+
 T-POSE Corp · MALA Risk Screening · prepared Sep 7, 2026 (Gate: Sep 9, 2026)
 
 > **W6 Sprint 0 docs (scope lock, setup checklist) live in [`04-build/`](04-build/), not here** —

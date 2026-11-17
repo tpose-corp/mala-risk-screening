@@ -62,3 +62,20 @@ Should/Could stay visible in the backlog but off the board; Won't stays written 
 re-argues it mid-sprint. If a new request comes in mid-build, it goes on Could/Won't (see the line
 to the sponsor above) — it doesn't reopen this file. Any future rescoping needs the PO's sign-off
 again, the same way this lock did.
+
+## v2 scope update (Nov 17, 2026)
+
+Real hospital users asked for 11 changes in session S01 (`../../test/sessions/S01-2026-11-17-hospital-uat.md`).
+The team accepted them as the new MUST list for the final delivery, because each one came from the
+real users, not from the team. The one-breath path is the same; it now runs inside three roles.
+
+| Moved | From | To | Reason |
+|---|---|---|---|
+| PBI-02 Full RBAC (3 roles) | SHOULD | MUST, built | S01 F-01 |
+| PBI-14 Versioning of edited records | COULD | MUST, built (admin amendments) | S01 F-06 |
+| PBI-03 Search patient (own unit, national ID) | COULD | MUST, built | S01 F-02, F-03 |
+| PBI-S1 AdminDashboard (admin back office) | WON'T | MUST, built | S01 F-10, F-11 |
+
+Still not built: PBI-08 LINE delivery, PBI-13 consent notice, PBI-16 AI advice, PBI-17 MFA,
+PBI-S2 HIS link, PBI-S3 chatbot.
+

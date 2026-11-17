@@ -4,6 +4,11 @@ Version 2.0, 28 October 2026. Replaces the W8 Alpha test plan (23 Sep 2026), whi
 before the code existed. The submitted copy (with team names) is the course deliverable; this file
 is the working version for the repo.
 
+> **Status, 18 Nov 2026:** no timed session results from this plan are recorded in the repo.
+> The real-user session S01 (17 Nov 2026) gave qualitative feedback only. Results, the issue log
+> and what was tested instead are in `../../test/` (start with `test/no-real-user-test.md`).
+> For v2, UAT-D3 (CSV) is an admin task, because clinicians may not export.
+
 > **All test data must be synthetic.** Use fake names, fake HN, made-up lab values. Never use a real
 > patient's data in a test case, screenshot, or bug report (`rule.md`).
 

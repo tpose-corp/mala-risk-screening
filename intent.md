@@ -5,6 +5,26 @@ Source: โครงการ MALA screening - ศูนย์ข้อมูล
 
 > Note: this file is based primarily on the original project document (docx). Anything in `.docs/02-design/prototype-v2/` (UI screens, confirm/e-signature steps, admin dashboard) is the team's **guess at UI/UX** only, not yet confirmed by the project owner ("พี่" / the hospital contact) — do not cite it as a requirement until confirmed. The underlying screening fields and rule logic now come from the real `thresholds/` documents (see "Real clinical criteria received" below), but the screen layout/wording is still unconfirmed. Open items are collected in "Open questions" below.
 
+## Update after the hospital session (Nov 17, 2026)
+
+Hospital staff tried the Alpha on Nov 17, 2026 (session S01, `test/sessions/S01-2026-11-17-hospital-uat.md`).
+Answers that close earlier open questions, as given by the hospital side and the team member who
+attended:
+
+- **Roles:** the hospital admin manages everything; doctors and nurses chosen by the hospital view
+  every unit, read-only, no export; รพ.สต. staff screen only patients of their own unit.
+- **Identity:** HN linked to the 13-digit national ID, entered only when adding a patient. A
+  patient who already belongs to another unit is sent back to that unit or to the hospital.
+  `registDate` in the hospital's sample file is taken as the date of registration in this system.
+- **Editing:** a screening may be edited until it is confirmed; after that only the hospital admin
+  can change it.
+- **Alerts:** two kinds, over-dose first, general risk second.
+- **Hand-over:** the hospital must run the system itself (criteria, on/off switches, manuals),
+  so these are admin settings, not code. Criteria changes still need a named approver from the
+  clinical team; the defaults stay the hospital outline of Sep 8, 2026.
+- **Hosting:** a separate system maintained by the hospital. Pulling data from the hospital's
+  central system is last priority and optional.
+
 ## Problem
 Metformin-Associated Lactic Acidosis (MALA) is an uncommon but severe, high-mortality complication, usually triggered when a patient has contributing factors such as acute kidney injury (AKI), dehydration, or an acute flare of a chronic disease.
 

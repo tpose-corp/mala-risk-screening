@@ -22,6 +22,20 @@ Owner: Product Owner (Sutapant Chucham)
 
 **Summary: the Gate's real bar is traceable, evidence-backed requirements — not a headcount. The team has real evidence (INT-01, DOC-01, DOC-02); the open item is finishing the diagrams' 3rd pass and continuing to gather staff-level pain points where possible.**
 
+## v2 status (Nov 18, 2026)
+
+After the hospital session S01 (Nov 17, 2026) these items changed status. Details and fix commits
+are in `../../test/issue-log.md`.
+
+| Item | Status now |
+|---|---|
+| PBI-02 Full RBAC | **Built** in v2: `admin`, `clinician` (read-only, no export), `pcu` (own unit only) |
+| PBI-03 Search existing patient | **Built** for the own unit; matching across units by 13-digit national ID (no HOSxP link) |
+| PBI-04 Add patient | **Changed** in v2: national ID required; new patients are "pending" until the admin verifies and adds the HN |
+| PBI-14 Versioning of edited records | **Built** in v2: admin amendments keep old and new values with a reason |
+| PBI-08 LINE alert | Still BLOCKED; in-app inbox now has two tabs, over-dose first |
+| PBI-S1 AdminDashboard | **Built** in v2 as the admin back office, because the hospital asked for it in S01 (scope change signed off in `../04-build/scope-lock.md`) |
+
 ## Interview log (pain-source evidence)
 
 | ID | Interviewee | Role | Date | Pain / info summary |
@@ -30,6 +44,8 @@ Owner: Product Owner (Sutapant Chucham)
 | DOC-01 | Original project document (docx) | Primary Care Pharmacy Service, Chiang Rai Prachanukroh Hospital | Before the project started | 58% of MALA patients received the drug from primary care; no CDS tool; criteria must be designed together with the medical team |
 | DOC-02 | `thresholds/` (checklist docx + rule-engine xlsx + demo-slides pdf) | วรางคณา งานดี, ศูนย์ข้อมูลยาและเภสัชสนเทศ รพ.เชียงรายประชานุเคราะห์ | Sep 8, 2026 | **The real clinical criteria** — 13-question screening form, dose-vs-eGFR (CPG) check, MALA risk score (eGFR/BMI/alcohol, threshold ≥2), symptom/AKI-trigger Sick Day Rule flags; binary alert model (not 3 tiers); alert channel = in-app **and** LINE group; names an AI-generated advice card and a chatbot. See `../../intent.md` "Real clinical criteria received" for full detail |
 | INT-02..05 | *None yet* | Real front-line staff at รพ.สต./health centers |
+| S01 | Hospital UAT session, 5 real users (U01 to U05) | รพ.สต. and hospital staff, plus comments from the hospital nurse (contact) | Nov 17, 2026 | Tried the Alpha; asked for 11 changes: 3 roles, national ID, no duplicate patient across units, admin verifies new patients, admin-created accounts, lock after confirm with admin edit, two alert tabs (over-dose first), NSAID/herbal notes per area, date and time on every step, admin overview, hospital-run settings/criteria/manuals. All built in v2. See `../../test/sessions/S01-2026-11-17-hospital-uat.md` |
+| SEC-01..04 | Published research (SECONDARY) | Not users | Nov 18, 2026 | MALA mortality 30-50%, FDA eGFR cut-offs, primary care often not adjusting doses to kidney function, rule-based checks improve dosing. See `secondary-evidence.md` |
 
 ### Problem overview (from INT-01 and DOC-01)
 
