@@ -3,7 +3,7 @@
 // The month and year in the header are dropdowns, so jumping back 70 years is one click,
 // not 840 presses of "previous month". Future dates are disabled (nobody is born tomorrow).
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { THAI_MONTHS_FULL, daysInMonth } from "@/lib/format";
 
 const WEEKDAYS = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
@@ -15,6 +15,7 @@ export function ThaiCalendar(props: {
   initial: { month: number; yearBE: number };
   onPick: (p: Picked) => void;
   onClose: () => void;
+  label?: string;
 }) {
   const today = new Date();
   const thisYearBE = today.getFullYear() + 543;
@@ -35,6 +36,25 @@ export function ThaiCalendar(props: {
       document.removeEventListener("mousedown", onDown);
     };
   }, [onClose]);
+
+  // Open where there is room: below the field if it fits, otherwise above it (like the
+  // printing-request system's date picker); if neither fits, scroll the page so it shows whole.
+  // A sticky button bar at the bottom of the screen counts as "no room".
+  const [up, setUp] = useState(false);
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    const field = box?.parentElement;
+    if (!box || !field) return;
+    const f = field.getBoundingClientRect();
+    const h = box.offsetHeight + 8;
+    const bar = Array.from(document.querySelectorAll<HTMLElement>(".ui-form-actions, .ui-savebar"))
+      .map((el) => el.getBoundingClientRect().top).filter((t) => t > f.bottom && t < window.innerHeight);
+    const bottomLimit = bar.length ? Math.min(...bar) : window.innerHeight;
+    const topLimit = 64 + (document.querySelector(".ui-steps") ? 44 : 0); // under the sticky header (and step bar)
+    if (f.bottom + h <= bottomLimit) setUp(false);
+    else if (f.top - h >= topLimit) setUp(true);
+    else box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, []);
 
   const { month, yearBE } = view;
   const firstWeekday = new Date(yearBE - 543, month - 1, 1).getDay(); // 0 = Sunday
@@ -57,7 +77,7 @@ export function ThaiCalendar(props: {
   }
 
   return (
-    <div ref={boxRef} className="cal" role="dialog" aria-label="เลือกวันเกิดจากปฏิทิน">
+    <div ref={boxRef} className={`cal${up ? " up" : ""}`} role="dialog" aria-label={props.label ?? "เลือกวันที่จากปฏิทิน"}>
       <div className="cal-head">
         <button type="button" className="cal-nav" aria-label="เดือนก่อนหน้า" onClick={() => step(-1)}>‹</button>
         <select className="fld" aria-label="เดือนในปฏิทิน" value={month}
