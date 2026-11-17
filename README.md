@@ -99,10 +99,12 @@ Deploy notes → [`.docs/final/deployment.md`](.docs/final/deployment.md).
 
 ## Team
 
-| Role | Owner |
-|---|---|
-| Product Owner | Sutapat Chucham |
-| Tech Lead | Sorrawit Thanakhwang |
-| AI Lead | Thiwakorn Boayairuksa |
-| Designer (UX/UI) | Nararat Kritphet |
-| QA / Test Lead | Neree Booncharoen |
+| Role | Owner | Student ID |
+|---|---|---|
+| Product Owner | Sutapat Chucham | 6531503085 |
+| Tech Lead | Sorrawit Thanakhwang | 6531503080 |
+| AI Lead | Thiwakorn Boayairuksa | 6631503019 |
+| Designer (UX/UI) | Nararat Kritphet | 6631503110 |
+| QA / Test Lead | Neree Booncharoen | 6631503018 |
+
+Role statements: [`.docs/final/role-statements/`](.docs/final/role-statements/)
