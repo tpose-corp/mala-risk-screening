@@ -1,18 +1,19 @@
 // GET /hospital/export — download cases as CSV (columns of the hospital's "report" sheet).
 // Takes the same filters as /hospital/cases (?q=&fac=&period=&result=); no filters = every case.
 // A Route Handler: returns a file instead of a page. Hospital staff only, and every download is
-// audited because the file contains patient names (rule.md / PDPA).
+// audited because the file contains patient names (rule.md / PDPA). Admin only.
 import type { NextRequest } from "next/server";
 import { audit } from "@/lib/audit";
 import { queryFor, readFilters, whereFor } from "@/lib/case-filters";
 import { db } from "@/lib/db";
 import { REPORT_COLUMNS, reportRow, toCsv } from "@/lib/report";
-import { getCurrentUser, isHospital } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return new Response("Forbidden", { status: 403 });
-  if (!isHospital(user)) {
+  // Admin only: doctors and nurses may view but not export (17 Nov 2026).
+  if (user.role !== "admin" || user.mustChangePassword) {
     await audit({ user, action: "hospital.export.denied" });
     return new Response("Forbidden", { status: 403 });
   }
