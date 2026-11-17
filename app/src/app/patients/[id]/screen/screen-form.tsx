@@ -5,37 +5,54 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { Modal } from "@/components/ui/modal";
 import { EgfrMeter } from "@/components/egfr-meter";
+import { LabDatePicker } from "@/components/lab-date-picker";
 import { bmiOf } from "@/lib/rules";
 import { submitWithoutReset } from "@/lib/submit";
-import { createScreening } from "./actions";
+import { saveScreening } from "./actions";
 import { AlcoholSection } from "./alcohol-section";
 
 export type PreviousValues = { weightKg: number; heightCm: number; egfr: number; doseMgDay: number; date: string };
 
+// Values of the screening being edited (edit mode, before it is confirmed).
+export type InitialValues = {
+  weightKg: number; heightCm: number; egfr: number; egfrDate: string | null; doseMgDay: number;
+  drinksAlcohol: boolean; bingeDrinking: boolean; regularHeavyDrinking: boolean;
+  vomiting: boolean; lowIntake: boolean; nsaid: boolean; nsaidNote: string | null; herbal: boolean; herbalNote: string | null;
+};
+
 // Checklist items 10–13, worded as in the checklist
+// Items 12 and 13 ask WHICH product when the answer is yes (17 Nov 2026): if one area keeps
+// showing risk, the hospital team can go and look for the shared cause.
 const TRIGGERS = [
   { name: "vomiting", q: "ในช่วงที่ผ่านมา ผู้ป่วยเคยมีอาการอาเจียนหรือท้องเสียหรือไม่?" },
   { name: "lowIntake", q: "ในช่วงที่ผ่านมา ผู้ป่วยเคยทานอาหารไม่ได้หรือทานได้น้อยลงต่อเนื่อง 1–2 วันหรือไม่?" },
-  { name: "nsaid", q: "ผู้ป่วยกินยาแก้ปวด แก้อักเสบ หรือยาชุดบ้างหรือไม่?" },
-  { name: "herbal", q: "ผู้ป่วยกินยาต้ม ยาหม้อ สมุนไพร หรืออาหารเสริมบ้างหรือไม่?" },
+  { name: "nsaid", q: "ผู้ป่วยกินยาแก้ปวด แก้อักเสบ หรือยาชุดบ้างหรือไม่?", note: "nsaidNote", noteLabel: "ระบุชื่อยา / ยาชุด และแหล่งที่ซื้อ (ถ้าทราบ)" },
+  { name: "herbal", q: "ผู้ป่วยกินยาต้ม ยาหม้อ สมุนไพร หรืออาหารเสริมบ้างหรือไม่?", note: "herbalNote", noteLabel: "ระบุชื่อสมุนไพร / อาหารเสริม และแหล่งที่ได้มา (ถ้าทราบ)" },
 ];
 
-export function ScreenForm({ patientId, sex, prev }: { patientId: number; sex: string; prev: PreviousValues | null }) {
-  // .bind fixes the first argument (patientId) so the form only needs to send the fields.
-  const [state, action, pending] = useActionState(createScreening.bind(null, patientId), undefined);
+export function ScreenForm({ patientId, sex, prev, screeningId = null, initial = null }: {
+  patientId: number; sex: string; prev: PreviousValues | null; screeningId?: number | null; initial?: InitialValues | null;
+}) {
+  // .bind fixes the first arguments so the form only needs to send the fields.
+  const [state, action, pending] = useActionState(saveScreening.bind(null, patientId, screeningId), undefined);
   const e = state?.errors;
+  const [closedFor, setClosedFor] = useState<typeof state>(undefined);
+  const locked = state?.locked && closedFor !== state ? state.locked : null;
+  const yn = (b: boolean | undefined) => (b ? "yes" : "no");
 
   // Controlled fields: React keeps each value in state, so the BMI / eGFR meter update live.
   // Height rarely changes, so it starts from last time (as in the hospital's demo); the rest
   // must be measured today, so they start empty with last time's value shown underneath.
-  const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState(prev ? String(prev.heightCm) : "");
-  const [egfr, setEgfr] = useState("");
-  const [dose, setDose] = useState("");
+  const [weight, setWeight] = useState(initial ? String(initial.weightKg) : "");
+  const [height, setHeight] = useState(initial ? String(initial.heightCm) : prev ? String(prev.heightCm) : "");
+  const [egfr, setEgfr] = useState(initial ? String(initial.egfr) : "");
+  const [dose, setDose] = useState(initial ? String(initial.doseMgDay) : "");
   const [choice, setChoice] = useState<Record<string, string>>({
-    vomiting: "no", lowIntake: "no", nsaid: "no", herbal: "no",
+    vomiting: yn(initial?.vomiting), lowIntake: yn(initial?.lowIntake), nsaid: yn(initial?.nsaid), herbal: yn(initial?.herbal),
   });
+  const [notes, setNotes] = useState<Record<string, string>>({ nsaidNote: initial?.nsaidNote ?? "", herbalNote: initial?.herbalNote ?? "" });
   const pick = (name: string, value: string) => setChoice((c) => ({ ...c, [name]: value }));
 
   const w = Number(weight);
@@ -65,18 +82,32 @@ export function ScreenForm({ patientId, sex, prev }: { patientId: number; sex: s
               <Field label="eGFR ล่าสุดในฐาน HIS (mL/min/1.73m²)" name="egfr" value={egfr} onChange={setEgfr} error={e?.egfr} hint={last(prev?.egfr ?? 0)} />
               <Field label="ขนาดยา Metformin ปัจจุบัน (มก./วัน)" name="doseMgDay" value={dose} onChange={setDose} error={e?.doseMgDay} step="250" hint={last(prev?.doseMgDay ?? 0, "มก./วัน")} />
             </div>
+            <div style={{ marginTop: 12 }}>
+              <LabDatePicker name="egfrDate" label="วันที่ตรวจ eGFR" initial={initial?.egfrDate} error={e?.egfrDate?.[0]} />
+            </div>
             {egfrNum !== null && !Number.isNaN(egfrNum) && <EgfrMeter value={egfrNum} />}
           </section>
 
           <section>
             <div className="sec-title"><span className="sec-num">2</span>การดื่มแอลกอฮอล์</div>
-            <AlcoholSection sex={sex} error={e?.alcohol?.[0]} />
+            <AlcoholSection sex={sex} error={e?.alcohol?.[0]}
+              initial={initial ? { drinks: yn(initial.drinksAlcohol), binge: yn(initial.bingeDrinking), regular: yn(initial.regularHeavyDrinking) } : undefined} />
           </section>
 
           <section>
             <div className="sec-title"><span className="sec-num">3</span>อาการและปัจจัยกระตุ้น</div>
             {TRIGGERS.map((t) => (
-              <YesNo key={t.name} q={t.q} name={t.name} value={choice[t.name]} onPick={pick} />
+              <div key={t.name}>
+                <YesNo q={t.q} name={t.name} value={choice[t.name]} onPick={pick} />
+                {t.note && choice[t.name] === "yes" && (
+                  <div style={{ margin: "6px 0 10px" }}>
+                    <label className="lbl" htmlFor={t.note}>{t.noteLabel}</label>
+                    <input className="fld" id={t.note} name={t.note} maxLength={300} value={notes[t.note]}
+                      onChange={(ev) => setNotes((n) => ({ ...n, [t.note!]: ev.target.value }))} />
+                    {e?.[t.note] && <div className="err">{e[t.note]![0]}</div>}
+                  </div>
+                )}
+              </div>
             ))}
           </section>
         </div>
@@ -93,17 +124,27 @@ export function ScreenForm({ patientId, sex, prev }: { patientId: number; sex: s
           <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, color: "var(--ink)" }}>ระบบจะตรวจ 4 ส่วน</div>
           <ul className="bullets">
             <li>ขนาดยา Metformin เหมาะกับ eGFR ตาม CPG ไหม</li>
-            <li>คะแนนความเสี่ยงจาก eGFR, BMI และการดื่มหนัก ถึง 2 คะแนนไหม</li>
+            <li>คะแนนความเสี่ยงจาก eGFR, BMI และการดื่มหนัก ถึงเกณฑ์ที่ รพ. กำหนดไหม</li>
             <li>อาเจียน ท้องเสีย หรือทานได้น้อยลง</li>
             <li>ยาแก้ปวด NSAIDs สมุนไพร หรืออาหารเสริม</li>
           </ul>
         </div>
         {e && <div className="err" role="alert">{e.form?.[0] ?? "กรุณาตรวจสอบข้อมูลที่ขึ้นสีแดง"}</div>}
         <button className="btn" type="submit" disabled={pending}>
-          {pending ? "กำลังประมวลผล…" : "ประมวลผลความเสี่ยง MALA"}
+          {pending ? "กำลังประมวลผล…" : screeningId ? "บันทึกการแก้ไขและประมวลผลใหม่" : "ประมวลผลความเสี่ยง MALA"}
         </button>
-        <Link href="/patients" className="btn-s">← กลับไปค้นหาผู้ป่วย</Link>
+        {screeningId ? (
+          <Link href={`/screenings/${screeningId}`} className="btn-s">ยกเลิกการแก้ไข</Link>
+        ) : (
+          <Link href="/patients" className="btn-s">← กลับไปค้นหาผู้ป่วย</Link>
+        )}
       </aside>
+      {locked && (
+        <Modal tone="warn" title="แก้ไขไม่ได้แล้ว" onClose={() => setClosedFor(state)}>
+          <p>ผลประเมินนี้ยืนยันและส่งให้ รพ. แล้ว เจ้าหน้าที่ รพ.สต. จึงแก้ไขเองไม่ได้</p>
+          <p>หากข้อมูลผิด กรุณาติดต่อ <b>{locked}</b> เพื่อให้ผู้ดูแลระบบแก้ไขให้ ระบบจะบันทึกประวัติการแก้ไขไว้ทุกครั้ง</p>
+        </Modal>
+      )}
     </form>
   );
 }

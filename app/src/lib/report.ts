@@ -10,8 +10,9 @@ export const REPORT_COLUMNS = [
 
 type Row = {
   createdAt: Date; egfr: number; bmi: number; doseMgDay: number; doseCheck: string; scoreEgfr: number; scoreBmi: number;
-  scoreAlcohol: number; riskScore: number; vomiting: boolean; lowIntake: boolean; nsaid: boolean; herbal: boolean;
-  patient: { hn: string | null; name: string; sex: string; dob: string; facility: string };
+  scoreAlcohol: number; riskScore: number; riskGroup: boolean; vomiting: boolean; lowIntake: boolean; nsaid: boolean; herbal: boolean;
+  facility: string; // the unit where the screening was done
+  patient: { hn: string | null; name: string; sex: string; dob: string };
 };
 
 const yn = (b: boolean) => (b ? "ใช่" : "ไม่ใช่");
@@ -30,12 +31,12 @@ export function reportRow(s: Row): string[] {
     yn(s.scoreEgfr > 0),
     yn(s.scoreBmi > 0),
     yn(s.scoreAlcohol > 0), // ข้อ 9.2.1 / 9.2.2 = ดื่มหนัก
-    yn(s.riskScore >= 2),
+    yn(s.riskGroup),
     yn(s.vomiting), // ข้อ 10 อาเจียน/ท้องเสีย = ขาดน้ำ
     yn(s.lowIntake), // ข้อ 11 = ขาดอาหาร
     yn(s.nsaid),
     yn(s.herbal),
-    s.patient.facility,
+    s.facility,
   ];
 }
 

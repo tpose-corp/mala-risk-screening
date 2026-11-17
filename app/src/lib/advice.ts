@@ -33,6 +33,7 @@ export const ADVICE = {
 type StoredResult = {
   doseCheck: string;
   riskScore: number;
+  riskGroup: boolean;
   drinksAlcohol: boolean;
   bingeDrinking: boolean;
   regularHeavyDrinking: boolean;
@@ -50,7 +51,7 @@ const heavyAlcoholOf = (s: StoredResult) =>
 export function adviceFor(s: StoredResult): AdviceCard[] {
   const sickDay = sickDayReasonsOf(s).length > 0;
   const cards: AdviceCard[] = [];
-  if (s.riskScore >= 2 && heavyAlcoholOf(s)) cards.push(ADVICE.quitAlcohol); // Part 2 "Advice เลิกเหล้า"
+  if (s.riskGroup && heavyAlcoholOf(s)) cards.push(ADVICE.quitAlcohol); // Part 2 "Advice เลิกเหล้า"
   if (sickDay) cards.push(ADVICE.sickDay, ADVICE.warningSigns); // Part 2/3/4 "Advice Sick Day Rules"
   if (s.nsaid) cards.push(ADVICE.waterNoNsaid); // Part 4 NSAIDs
   return cards;
@@ -66,7 +67,7 @@ export function tasksFor(s: StoredResult) {
     // Part 1: Management "Consult แพทย์เพื่อปรับ dose ให้เหมาะสม", Action "ระบบแจ้งเตือนอัตโนมัติไปยังแพทย์ผู้รับผิดชอบ"
     system.push("แจ้งเตือนแพทย์ผู้รับผิดชอบ เพื่อพิจารณาปรับขนาดยาให้เหมาะสม");
   }
-  if (s.riskScore >= 2) {
+  if (s.riskGroup) {
     // Part 2: Management "Close monitoring, Adjust dose/off Metformin", Action "ระบบเก็บข้อมูล...รอการจัดการทางคลินิก"
     system.push("บันทึกเป็นผู้ป่วยกลุ่มเสี่ยง MALA รอแพทย์ติดตามใกล้ชิดและพิจารณาปรับหรือหยุดยา");
     if (heavyAlcoholOf(s)) staff.push("แนะนำผู้ป่วยให้เลิกเหล้า");

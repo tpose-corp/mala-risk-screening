@@ -4,22 +4,29 @@ import Link from "next/link";
 import { EgfrMeter } from "@/components/egfr-meter";
 import { Topbar } from "@/components/topbar";
 import { tasksFor } from "@/lib/advice";
+import { criteriaFor } from "@/lib/criteria";
+import { LockedNotice } from "./locked-notice";
 import { db } from "@/lib/db";
-import { ALCOHOL_LABEL, TRIGGER_LABEL, thaiDate } from "@/lib/format";
+import { ALCOHOL_LABEL, TRIGGER_LABEL, thaiDate, thaiDateTime } from "@/lib/format";
+import type { RuleParams } from "@/lib/rules";
+import { getSettings } from "@/lib/settings";
 import { alertReasons } from "@/lib/reasons";
-import { RISK_SCORE_ALERT_THRESHOLD } from "@/lib/rules";
 import { loadScreening } from "@/lib/screening";
 import { requireFacilityStaff } from "@/lib/session";
 
-const DOSE_BANDS = [
-  { label: "eGFR ≥ 45", rule: "ไม่เกิน 2000 มก./วัน", match: (e: number) => e >= 45 },
-  { label: "eGFR 30–44", rule: "ไม่เกิน 1000 มก./วัน", match: (e: number) => e >= 30 && e < 45 },
-  { label: "eGFR < 30", rule: "ห้ามใช้ยา", match: (e: number) => e < 30 },
+// Dose bands drawn from the criteria version this screening was scored with.
+const doseBands = (p: RuleParams) => [
+  { label: `eGFR ≥ ${p.egfrReducedBelow}`, rule: `ไม่เกิน ${p.maxDoseNormal} มก./วัน`, match: (e: number) => e >= p.egfrReducedBelow },
+  { label: `eGFR ${p.egfrContraindicatedBelow}–${p.egfrReducedBelow - 1}`, rule: `ไม่เกิน ${p.maxDoseReduced} มก./วัน`, match: (e: number) => e >= p.egfrContraindicatedBelow && e < p.egfrReducedBelow },
+  { label: `eGFR < ${p.egfrContraindicatedBelow}`, rule: "ห้ามใช้ยา", match: (e: number) => e < p.egfrContraindicatedBelow },
 ];
 
-export default async function ResultPage({ params }: PageProps<"/screenings/[id]">) {
+export default async function ResultPage({ params, searchParams }: PageProps<"/screenings/[id]">) {
   const user = await requireFacilityStaff();
   const s = await loadScreening((await params).id, user);
+  const { locked } = await searchParams;
+  const p = await criteriaFor(s.ruleVersion);
+  const adminContact = (await getSettings()).adminContact;
   const prev = await db.screening.findFirst({
     where: { patientId: s.patientId, createdAt: { lt: s.createdAt } },
     orderBy: { createdAt: "desc" },
@@ -27,7 +34,7 @@ export default async function ResultPage({ params }: PageProps<"/screenings/[id]
 
   const tasks = tasksFor(s);
   const tone = s.isAlert ? "hi" : "ok";
-  const riskGroup = s.riskScore >= RISK_SCORE_ALERT_THRESHOLD;
+  const riskGroup = s.riskGroup;
   const part3 = s.vomiting || s.lowIntake;
   const part4 = s.nsaid || s.herbal;
 
@@ -86,7 +93,7 @@ export default async function ResultPage({ params }: PageProps<"/screenings/[id]
 
           {/* ---------- Part 1 ---------- */}
           <Part no={1} title="ขนาดยา Metformin เทียบกับ eGFR (CPG)" ok={s.doseCheck === "ok"} okText="เหมาะสม" badText={s.doseCheck === "contraindicated" ? "ห้ามใช้ยา" : "ไม่เหมาะสม"}>
-            {DOSE_BANDS.map((b) => (
+            {doseBands(p).map((b) => (
               <div key={b.label} className={`kv band${b.match(s.egfr) ? " on" : ""}`}>
                 <span className="k">{b.label}</span>
                 <span className="v">{b.rule}</span>
@@ -100,10 +107,10 @@ export default async function ResultPage({ params }: PageProps<"/screenings/[id]
 
           {/* ---------- Part 2 ---------- */}
           <Part no={2} title="คะแนนความเสี่ยง MALA" ok={!riskGroup} okText={`${s.riskScore} คะแนน ไม่ถึงเกณฑ์`} badText={`${s.riskScore} คะแนน กลุ่มเสี่ยง`}>
-            <div className="kv"><span className="k">eGFR น้อยกว่า 60 (ผู้ป่วย {fmt(s.egfr)})</span><span className="v">+{s.scoreEgfr}</span></div>
-            <div className="kv"><span className="k">BMI น้อยกว่า 23 (ผู้ป่วย {s.bmi.toFixed(1)})</span><span className="v">+{s.scoreBmi}</span></div>
+            <div className="kv"><span className="k">eGFR น้อยกว่า {p.egfrRiskBelow} (ผู้ป่วย {fmt(s.egfr)})</span><span className="v">+{s.scoreEgfr}</span></div>
+            <div className="kv"><span className="k">BMI น้อยกว่า {p.bmiRiskBelow} (ผู้ป่วย {s.bmi.toFixed(1)})</span><span className="v">+{s.scoreBmi}</span></div>
             <div className="kv"><span className="k">ดื่มหนัก (ผู้ป่วย{ALCOHOL_LABEL[s.alcohol]})</span><span className="v">+{s.scoreAlcohol}</span></div>
-            <div className="kv total"><b>รวม (2 คะแนนขึ้นไป = กลุ่มเสี่ยง)</b><span className="v">{s.riskScore} คะแนน</span></div>
+            <div className="kv total"><b>รวม ({p.riskGroupMinScore} คะแนนขึ้นไป = กลุ่มเสี่ยง)</b><span className="v">{s.riskScore} คะแนน</span></div>
           </Part>
 
           {/* ---------- Part 3 + 4 ---------- */}
@@ -112,8 +119,8 @@ export default async function ResultPage({ params }: PageProps<"/screenings/[id]
             <Found label={TRIGGER_LABEL.lowIntake} on={s.lowIntake} />
           </Part>
           <Part no={4} title="ยาหรือผลิตภัณฑ์ที่ทำให้ไตบาดเจ็บ" ok={!part4} okText="ไม่พบ" badText="พบ ต้องแนะนำ Sick Day Rules" warn>
-            <Found label={TRIGGER_LABEL.nsaid} on={s.nsaid} />
-            <Found label={TRIGGER_LABEL.herbal} on={s.herbal} />
+            <Found label={TRIGGER_LABEL.nsaid} on={s.nsaid} note={s.nsaidNote} />
+            <Found label={TRIGGER_LABEL.herbal} on={s.herbal} note={s.herbalNote} />
           </Part>
         </div>
 
@@ -127,9 +134,19 @@ export default async function ResultPage({ params }: PageProps<"/screenings/[id]
                 <ul className="bullets">{tasks.system.map((t) => <li key={t}>{t}</li>)}</ul>
               </>
             )}
-            <div className="draft-flag" style={{ marginTop: 12 }}>คำนวณด้วยเกณฑ์ที่ รพ. กำหนดไว้ (ฉบับร่าง)</div>
+            <div className="draft-flag" style={{ marginTop: 12 }}>คำนวณด้วยเกณฑ์ที่ รพ. กำหนด เวอร์ชัน {s.ruleVersion}</div>
+          </div>
+          <div className="card pad">
+            <div className="todo-h">เวลา</div>
+            <ul className="timeline">
+              <li><b>บันทึกผลคัดกรอง</b>{thaiDateTime(s.createdAt)}</li>
+              {s.updatedAt.getTime() - s.createdAt.getTime() > 1000 && <li><b>แก้ไขล่าสุด</b>{thaiDateTime(s.updatedAt)}</li>}
+              {s.alertRaisedAt && <li><b>แจ้งเตือน รพ.</b>{thaiDateTime(s.alertRaisedAt)}</li>}
+              {s.confirmedAt && <li><b>ยืนยันและส่ง รพ.</b>{thaiDateTime(s.confirmedAt)}</li>}
+            </ul>
           </div>
           <Link href={next} className="btn" style={{ background: `var(--${tone})` }}>ดำเนินการต่อ</Link>
+          <LockedNotice editHref={s.confirmedAt ? null : `/patients/${s.patientId}/screen?edit=${s.id}`} contact={adminContact} openAtStart={locked === "1"} />
           <Link href="/patients" className="btn-s">กลับไปรายชื่อผู้ป่วย</Link>
         </aside>
       </main>
@@ -150,10 +167,13 @@ function Part(props: { no: number; title: string; ok: boolean; okText: string; b
   );
 }
 
-function Found({ label, on }: { label: string; on: boolean }) {
+function Found({ label, on, note }: { label: string; on: boolean; note?: string | null }) {
   return (
     <div className="kv">
-      <span className="k" style={{ color: on ? "var(--ink-2)" : "var(--muted)" }}>{label}</span>
+      <span className="k" style={{ color: on ? "var(--ink-2)" : "var(--muted)" }}>
+        {label}
+        {on && note && <><br /><span className="note">ระบุ: {note}</span></>}
+      </span>
       <span className="v" style={{ color: on ? "var(--warn)" : "var(--muted)" }}>{on ? "พบ" : "ไม่พบ"}</span>
     </div>
   );
