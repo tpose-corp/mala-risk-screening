@@ -31,7 +31,7 @@ No heuristic review score, SUS, TAM or UTAUT2 result exists yet.
 | Rule cases with the expected result | No tool at รพ.สต. (DOC-01) | 11 of 11 | `app/scripts/eval-rule-cases.ts` |
 | Same input gives the same result | Not applicable (no tool) | Yes (R-11) | same script |
 | Hospital requests from S01 built | 0 of 11 (Alpha) | 11 of 11 (v2, PR #28) | issue log section A |
-| Live log in time | 9.13 s (server in USA) | Pending re-measure after the Singapore region deploy | `results/live-speed-2026-11-18.md` |
+| Live log in time | 9.13 s (server in USA) | 1.00 s and 0.54 s (Singapore, 2 runs) | `results/live-speed-2026-11-18.md` |
 
 Screening time per case and "risk judged correctly" by real staff have no numbers. A fair before
 value needs the current paper method timed at a รพ.สต., which has not been done.

@@ -28,15 +28,19 @@ Measured: 18 Nov 2026, about 00:20 Thai time, from Thailand, by the team (not a 
 `app/vercel.json` sets `"regions": ["sin1"]` so the server code runs in Singapore, next to the
 database. See `.docs/final/deployment.md`.
 
-## After the region fix
+## After the region fix (code running in `sin1`, Singapore)
 
-Not measured yet. Re-run the same steps after the next production deploy and add the numbers
-here. Do not fill this table with an estimate.
+Measured on 18 Nov 2026 after deploying `main` at merge `7d7a69c` (PR #29). Same script, same
+account, run twice. Header now `x-vercel-id: sin1::sin1::...`.
 
-| What | Time |
-|---|---|
-| Log in | |
-| `/admin` | |
-| `/admin/patients` | |
-| `/hospital` | |
-| `/hospital/cases` | |
+| What | Before | After, run 1 | After, run 2 |
+|---|---|---|---|
+| Login page HTML (curl, 3 runs) | 0.83 s, 0.47 s, 0.47 s | 0.25 s, 0.19 s, 0.20 s | |
+| Log in (submit to first page) | 9.13 s | 1.00 s | 0.54 s |
+| `/admin` | 3.90 s | 0.19 s | 0.16 s |
+| `/admin/patients` | 3.04 s | 0.34 s | 0.59 s |
+| `/hospital` | 5.79 s | 0.17 s | 0.16 s |
+| `/hospital/cases` | 4.20 s | 0.33 s | 0.22 s |
+
+Log in is about 9 to 17 times faster; pages are about 5 to 36 times faster. The first request
+after the database has been idle for about 5 minutes is still slower (Neon free tier wakes up).
