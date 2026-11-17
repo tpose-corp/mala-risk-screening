@@ -7,7 +7,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
-import { HOSPITAL, createSession, deleteSession, getCurrentUser } from "@/lib/session";
+import { asActor } from "@/lib/actor";
+import { createSession, deleteSession, getCurrentUser, homeOf } from "@/lib/session";
 
 export type LoginState = { error?: string } | undefined;
 
@@ -35,9 +36,16 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     return { error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" };
   }
 
+  // A deactivated account cannot log in (the admin "removes" staff this way, never by deleting).
+  if (!user.active) {
+    await audit({ user, action: "login.inactive" });
+    return { error: "บัญชีนี้ถูกปิดการใช้งาน กรุณาติดต่อผู้ดูแลระบบ รพ." };
+  }
+
   await createSession(user.id);
+  await asActor(user.id, (tx) => tx.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }));
   await audit({ user, action: "login.success" });
-  redirect(user.facility === HOSPITAL ? "/hospital" : "/patients");
+  redirect(user.mustChangePassword ? "/account/password" : homeOf(user.role));
 }
 
 export async function logout() {

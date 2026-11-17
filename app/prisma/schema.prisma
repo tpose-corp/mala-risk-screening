@@ -1,6 +1,11 @@
-// Database blueprint for MALA Risk Screening.
+// Database blueprint for MALA Risk Screening (v2, after the hospital UAT on 17 Nov 2026).
 // Each `model` becomes one table. Prisma reads this file and creates the tables for us.
 // Docs: https://pris.ly/d/prisma-schema
+//
+// Who uses the system (hospital requirement list, 17 Nov 2026):
+//   admin      = hospital back office: manages everything (accounts, units, patients, criteria, settings)
+//   clinician  = doctor / nurse chosen by the hospital: sees every unit, read-only, records follow-up
+//   pcu        = รพ.สต. staff: sees only their own unit, adds patients, screens
 
 generator client {
   provider = "prisma-client"
@@ -8,24 +13,53 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
-// Staff account. Passwords are stored only as a bcrypt hash (rule.md: never plaintext).
-model User {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique
-  passwordHash String
-  displayName  String
-  role         String // "nurse" | "pharmacist" | "doctor" | "admin"
-  facility     String
-  createdAt    DateTime @default(now())
+// A primary-care unit (รพ.สต. / ศสม.). Users and patients point at it by its unique name,
+// so pages can keep showing `facility` as plain text. Renaming cascades to every row.
+model Facility {
+  id        Int      @id @default(autoincrement())
+  code      String?  @unique // e.g. the MOPH 5-digit unit code, optional
+  name      String   @unique
+  active    Boolean  @default(true) // closed units are hidden from pick lists, never deleted
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  sessions           Session[]
-  patientsCreated    Patient[]
-  screenings         Screening[] @relation("screener")
+  users      User[]
+  patients   Patient[]
+  screenings Screening[]
+}
+
+// Staff account. Created by an admin only (no self sign-up). Passwords are stored only as a
+// bcrypt hash (rule.md: never plaintext).
+model User {
+  id                 Int       @id @default(autoincrement())
+  username           String    @unique
+  passwordHash       String
+  displayName        String
+  role               String // "admin" | "clinician" | "pcu"
+  facility           String? // required for "pcu", empty for hospital staff
+  facilityRef        Facility? @relation(fields: [facility], references: [name], onUpdate: Cascade)
+  position           String? // e.g. "พยาบาลวิชาชีพ", "แพทย์", "เภสัชกร"
+  licenseNo          String? // professional licence no. (identifies who confirmed, ETA §9)
+  phone              String?
+  active             Boolean   @default(true) // deactivated, never deleted (audit trail keeps pointing at it)
+  mustChangePassword Boolean   @default(true) // admin sets a temporary password; user picks their own
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  sessions            Session[]
+  patientsCreated     Patient[]   @relation("patientCreator")
+  patientsVerified    Patient[]   @relation("patientVerifier")
+  screenings          Screening[] @relation("screener")
   screeningsConfirmed Screening[] @relation("confirmer")
   alertsAcknowledged  Screening[] @relation("acknowledger")
+  followUps           Screening[] @relation("followUp")
+  amendments          Amendment[]
+  ruleSets            RuleSet[]
+  manuals             Manual[]
 }
 
 // Logged-in session. We keep only a SHA-256 hash of the cookie token, not the token itself.
@@ -37,44 +71,64 @@ model Session {
   createdAt DateTime @default(now())
 }
 
-// Patient — minimal fields only (intent.md, Sep 8: HN instead of national ID).
+// Patient. The 13-digit national ID (CardID) is the one key that stops the same person being
+// registered twice across units. A patient added by a รพ.สต. is "pending" until the hospital
+// admin checks the identity and fills in the HN.
 model Patient {
-  id          Int      @id @default(autoincrement())
-  name        String
-  dob         String // Thai Buddhist-era date as entered, e.g. "12/03/2501"
-  sex         String // "หญิง" | "ชาย"
-  hn          String? // optional — new patients may not have one yet
-  facility    String
-  createdAt   DateTime @default(now())
-  createdById Int
-  createdBy   User     @relation(fields: [createdById], references: [id])
+  id           Int       @id @default(autoincrement())
+  cardId       String    @unique // เลขประจำตัวประชาชน 13 หลัก, entered only when adding a patient
+  hn           String?   @unique // hospital number, filled in by the admin when verifying
+  name         String
+  dob          String // Thai Buddhist-era date "dd/mm/yyyy"; age is computed from it
+  sex          String // "หญิง" | "ชาย"
+  phone        String?
+  facility     String? // home unit (หน่วยบริการประจำ); empty = not assigned yet
+  facilityRef  Facility? @relation(fields: [facility], references: [name], onUpdate: Cascade)
+  status       String    @default("pending") // "pending" | "verified"
+  verifiedAt   DateTime?
+  verifiedById Int?
+  verifiedBy   User?     @relation("patientVerifier", fields: [verifiedById], references: [id])
+  active       Boolean   @default(true) // removed by the admin = deactivated, never deleted
+  registeredAt DateTime  @default(now()) // วันที่ลงทะเบียนในระบบ (registDate in the hospital file)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  createdById  Int
+  createdBy    User      @relation("patientCreator", fields: [createdById], references: [id])
 
   screenings Screening[]
+
+  @@index([facility])
+  @@index([name])
 }
 
-// One MALA screening = the 13-item form + the rule engine's result + the confirm step.
+// One MALA screening = the checklist + the rule engine's result + the confirm step.
 model Screening {
-  id         Int      @id @default(autoincrement())
-  patientId  Int
-  patient    Patient  @relation(fields: [patientId], references: [id])
-  screenerId Int
-  screener   User     @relation("screener", fields: [screenerId], references: [id])
-  createdAt  DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  patientId   Int
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  facility    String // the unit where this screening was done (may differ from the home unit)
+  facilityRef Facility @relation(fields: [facility], references: [name], onUpdate: Cascade)
+  screenerId  Int
+  screener    User     @relation("screener", fields: [screenerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // --- form inputs ---
-  weightKg   Float
-  heightCm   Float
-  egfr       Float
-  doseMgDay  Int
-  alcohol    String // summary: "none" | "light" | "heavy" (old rows may hold "occasional" | "regular")
-  // checklist item 9 (MALA_Screening_Checklist.docx): 9.1 drinks? 9.2.1 binge? 9.2.2 regular heavy?
+  weightKg             Float
+  heightCm             Float
+  egfr                 Float
+  egfrDate             String? // date of the eGFR lab result, "dd/mm/yyyy" พ.ศ.
+  doseMgDay            Int
+  alcohol              String // summary: "none" | "light" | "heavy"
   drinksAlcohol        Boolean @default(false)
   bingeDrinking        Boolean @default(false)
   regularHeavyDrinking Boolean @default(false)
-  vomiting   Boolean
-  lowIntake  Boolean
-  nsaid      Boolean
-  herbal     Boolean
+  vomiting             Boolean
+  lowIntake            Boolean
+  nsaid                Boolean
+  nsaidNote            String? // which painkiller / ยาชุด (for the doctor's area follow-up)
+  herbal               Boolean
+  herbalNote           String? // which herb / supplement
 
   // --- rule engine output (stored so the record shows exactly what was decided) ---
   ruleVersion   String
@@ -85,40 +139,102 @@ model Screening {
   scoreBmi      Int
   scoreAlcohol  Int
   riskScore     Int
+  riskGroup     Boolean   @default(false) // score reached the risk-group threshold of THIS rule version
   isAlert       Boolean
-  alertRaisedAt DateTime? // set the moment the result is computed (intent.md: alert must not wait for Confirm)
-  adviceGivenAt DateTime? // staff ticked "advice given to the patient"
+  alertKind     String? // "dose" (ใช้ยาเกินขนาด, top priority) | "risk" (เสี่ยงทั่วไป)
+  alertRaisedAt DateTime?
+  adviceGivenAt DateTime?
 
-  // --- hospital side: in-app alert inbox ---
-  acknowledgedAt   DateTime? // hospital doctor pressed "รับเรื่องแล้ว"
+  // --- hospital side ---
+  acknowledgedAt   DateTime?
   acknowledgedById Int?
   acknowledgedBy   User?     @relation("acknowledger", fields: [acknowledgedById], references: [id])
+  followUpNote     String? // what the doctor / nurse decided to do with the patient
+  followUpAt       DateTime?
+  followUpById     Int?
+  followUpBy       User?     @relation("followUp", fields: [followUpById], references: [id])
 
-  // --- confirm / e-signature (ETA §9) ---
+  // --- confirm / e-signature (ETA §9). After this the รพ.สต. can no longer edit; only the admin can. ---
   confirmedAt   DateTime?
   confirmedById Int?
   confirmedBy   User?     @relation("confirmer", fields: [confirmedById], references: [id])
   confirmNote   String?
 
-  // Indexes so the hospital lists stay fast with tens of thousands of screenings.
   @@index([isAlert, acknowledgedAt])
-  @@index([isAlert, alertRaisedAt])
+  @@index([isAlert, alertKind, alertRaisedAt])
   @@index([patientId, createdAt])
+  @@index([facility, createdAt])
   @@index([createdAt])
 }
 
-// Audit trail (Computer Crime Act §26). Append-only: a database trigger blocks UPDATE/DELETE.
-// `detail` must never contain patient names, lab values, or passwords (rule.md).
+// Every change to a patient or a screening after it was saved: who, when, which field, old and
+// new value, and why. Kept forever so a record's history can always be shown (ETA §9 integrity).
+// Unlike AuditLog this table DOES hold clinical values, so only the admin can read it.
+model Amendment {
+  id        Int      @id @default(autoincrement())
+  at        DateTime @default(now())
+  byId      Int
+  by        User     @relation(fields: [byId], references: [id])
+  entity    String // "Patient" | "Screening"
+  entityId  Int
+  patientId Int
+  field     String
+  oldValue  String?
+  newValue  String?
+  reason    String
+
+  @@index([patientId, at])
+  @@index([entity, entityId])
+}
+
+// Screening criteria, one row per version. The hospital edits the numbers from the admin page;
+// the newest row is in force. Old screenings keep the version they were scored with.
+model RuleSet {
+  id          Int      @id @default(autoincrement())
+  version     String   @unique
+  params      Json // see src/lib/rules.ts → RuleParams
+  approvedBy  String // the doctor / pharmacist who approved the numbers
+  reason      String
+  createdAt   DateTime @default(now())
+  createdById Int?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+}
+
+// System switches the admin can flip without a developer (on/off per role, contact number, …).
+model Setting {
+  key         String   @id
+  value       String
+  updatedAt   DateTime @updatedAt
+  updatedById Int?
+}
+
+// User manuals uploaded by the admin. Stored in the database so the app needs no file server.
+model Manual {
+  id           Int      @id @default(autoincrement())
+  title        String
+  fileName     String
+  mime         String
+  size         Int
+  data         Bytes
+  audience     String   @default("all") // "all" | "pcu" | "clinician"
+  active       Boolean  @default(true)
+  uploadedAt   DateTime @default(now())
+  uploadedById Int
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+}
+
+// Audit trail (Computer Crime Act §26). Append-only: a database trigger blocks UPDATE/DELETE,
+// for everyone including the admin. `detail` must never contain patient names, lab values, or passwords.
 model AuditLog {
   id       Int      @id @default(autoincrement())
   at       DateTime @default(now())
   userId   Int?
-  username String? // snapshot, survives even if the account is later removed
-  action   String // e.g. "login.success", "screening.create"
+  username String?
+  action   String
   entity   String?
   entityId Int?
   detail   String?
-  device   String? // short browser / OS summary, e.g. "Chrome บน Windows". No IP address is stored (team decision).
+  device   String?
 
   @@index([at])
 }
