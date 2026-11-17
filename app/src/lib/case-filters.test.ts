@@ -21,7 +21,7 @@ describe("whereFor", () => {
   });
   it("result + facility + search", () => {
     const w = whereFor(readFilters({ result: "noalert", fac: "รพ.สต.ดอยลาน", q: "70-1" }), "createdAt");
-    expect(w).toMatchObject({ isAlert: false, patient: { facility: "รพ.สต.ดอยลาน", OR: [{ name: { contains: "70-1" } }, { hn: { contains: "70-1" } }] } });
+    expect(w).toMatchObject({ isAlert: false, facility: "รพ.สต.ดอยลาน", patient: { OR: [{ name: { contains: "70-1", mode: "insensitive" } }, { hn: { contains: "70-1" } }] } });
   });
   it("period applies to the chosen date field", () => {
     const w = whereFor(readFilters({ period: "7d" }), "acknowledgedAt") as Record<string, Record<string, unknown>>;

@@ -31,7 +31,7 @@ describe("describeAction / describeTarget", () => {
     expect(describeAction("login.success").warn).toBeUndefined();
   });
   it("unknown code falls back to itself", () => expect(describeAction("x.y").label).toBe("x.y"));
-  it("categories", () => expect(actionsIn("auth")).toEqual(["login.success", "login.failed", "logout", "access.denied", "record.denied"]));
+  it("categories", () => expect(actionsIn("auth")).toEqual(["login.success", "login.failed", "logout", "access.denied", "record.denied", "account.password.change", "login.inactive"]));
   it("targets", () => {
     expect(describeTarget("Screening", 5)).toBe("เคสคัดกรอง #5");
     expect(describeTarget("Patient", 3)).toBe("ผู้ป่วย #3");
@@ -58,9 +58,9 @@ describe("describeDetail", () => {
     expect(describeDetail("login.failed", "account=exists")).toBe("รหัสผ่านไม่ถูกต้อง");
   });
   it("account and record changes made in the database", () => {
-    expect(describeDetail("db.user.update", "role=nurse>admin changed=role")).toBe("ตำแหน่ง พยาบาลวิชาชีพ เป็น ผู้ดูแลระบบ");
+    expect(describeDetail("db.user.update", "role=pcu>admin changed=role")).toBe("ตำแหน่ง เจ้าหน้าที่ รพ.สต. เป็น ผู้ดูแลระบบ (รพ.)");
     expect(describeDetail("db.user.update", "changed=password")).toBe("เปลี่ยนรหัสผ่าน");
-    expect(describeDetail("db.user.create", "username=temp role=nurse")).toBe("ชื่อผู้ใช้ temp ตำแหน่ง พยาบาลวิชาชีพ");
+    expect(describeDetail("admin.user.create", "username=temp role=pcu")).toBe("ชื่อผู้ใช้ temp ตำแหน่ง เจ้าหน้าที่ รพ.สต.");
     expect(describeDetail("db.screening.update", "changed=egfr,riskScore,scoreEgfr")).toBe("เปลี่ยนeGFR, คะแนน");
   });
   it("nothing to add", () => {
@@ -88,10 +88,10 @@ describe("retention (CCA §26)", () => {
 });
 
 describe("describeRow (who)", () => {
-  const users = [{ id: 1, username: "somsri", displayName: "สมศรี ใจดี", role: "nurse", facility: "รพ.สต.บ้านดู่" }];
+  const users = [{ id: 1, username: "somsri", displayName: "สมศรี ใจดี", role: "pcu", facility: "รพ.สต.บ้านดู่" }];
   const base = { entity: null, entityId: null, detail: null, device: null };
   it("known user", () => expect(describeRow({ ...base, userId: 1, username: "somsri", action: "logout" }, users))
-    .toMatchObject({ who: "สมศรี ใจดี", whoNote: "พยาบาลวิชาชีพ", facility: "รพ.สต.บ้านดู่" }));
+    .toMatchObject({ who: "สมศรี ใจดี", whoNote: "เจ้าหน้าที่ รพ.สต.", facility: "รพ.สต.บ้านดู่" }));
   it("deleted account keeps its old username", () => expect(describeRow({ ...base, userId: 9, username: "old", action: "logout" }, users))
     .toMatchObject({ who: "บัญชี old", whoNote: "บัญชีนี้ถูกลบแล้ว" }));
   it("failed login on a real account", () => expect(describeRow({ ...base, userId: null, username: "somsri", action: "login.failed" }, users))

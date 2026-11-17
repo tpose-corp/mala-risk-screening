@@ -1,29 +1,60 @@
-# MALA Risk Screening — web app (Alpha, W8)
+# MALA Risk Screening web app (v2, after the hospital UAT on 17 Nov 2026)
 
-The working MVP for the locked MUST workflow in `../.docs/04-build/scope-lock.md`:
-**log in → add/find a patient → fill the 13-item form → deterministic risk result → confirm, logged.**
+Same core workflow as the Alpha (log in, find or add a patient, screen, result, confirm, send to the
+hospital), rebuilt around the hospital's requirement list from the UAT session:
 
-Stack: Next.js 16 (App Router, TypeScript) · Prisma 7 + SQLite · bcryptjs · zod · Vitest.
-All free/open source, runs on any machine with Node.js ≥ 20 (can be self-hosted at the hospital).
+- **Three roles.** `admin` (hospital back office, manages everything), `clinician` (doctor or nurse
+  chosen by the hospital: sees every unit, read-only, no export, records follow-up) and `pcu`
+  (รพ.สต. staff: own unit only). Accounts are created only by the admin, with a temporary password
+  that must be changed at first login.
+- **Patients keyed by the 13-digit national ID.** A รพ.สต. can add a patient (status "pending")
+  but a patient already registered at another unit is refused with a "go to your own unit or the
+  hospital" popup. The admin verifies the identity and adds the HN.
+- **Screening editable until confirmed**, then locked for the รพ.สต. (popup with the admin's
+  contact). The admin can still correct it, with a reason, and every change is kept in the
+  Amendment history with old and new values.
+- **Two alert tabs** for the hospital: ใช้ยาเกินขนาด first, เกณฑ์เสี่ยงทั่วไป second.
+- **NSAID / herbal answers name the product**, summarised per unit at `/hospital/areas`.
+- **Admin back office** (`/admin`): overview, accounts, units, patients, criteria versions,
+  settings (switch the system off per role), manuals.
 
-## Run it
+Stack: Next.js 16 (App Router, TypeScript), Prisma 7 + PostgreSQL, bcryptjs, zod, Vitest.
+All free tiers: Vercel (hosting) + Neon (PostgreSQL). Can also be self-hosted on any Postgres.
+
+## Run it on your machine
 
 ```bash
 cd app
 npm install
-cp .env.example .env          # Windows PowerShell: copy .env.example .env
-npx prisma migrate dev        # creates dev.db (tables + audit-log protection)
-npx prisma db seed            # synthetic demo users + patients
-npm run dev                   # → http://localhost:3100 (port 3100 so it does not clash with other projects on 3000)
+npm run db:local              # starts a local PostgreSQL (prisma dev) and prints a postgres:// URL
+cp .env.example .env          # paste that URL into DATABASE_URL
+npx prisma migrate deploy     # tables + audit triggers
+npx prisma db seed            # synthetic demo data
+npm run db:seed:history       # optional: 5 years of synthetic history (8 units, ~450 patients, ~3,400 screenings)
+npm run dev                   # http://localhost:3100
 ```
 
-Demo accounts (synthetic), password `mala1234` for all:
-`somsri` and `manee` (รพ.สต. nurses), `doctor` (referral-hospital doctor), `admin` (can open `/audit`).
+Demo accounts (synthetic), password `mala1234` for all: `admin` (hospital back office),
+`doctor` and `nurse` (hospital clinicians), `somsri`, `manee`, `somchai` (รพ.สต. staff).
 
 ```bash
-npm test                      # unit tests: rule engine (test-plan.md → PBI-06), audit log, filters, text
+npm test                      # unit tests
 npx tsc --noEmit && npm run lint
 ```
+
+## Deploy (Vercel + Neon, both free)
+
+1. Neon: create a project (region Singapore). Copy the **pooled** connection string and the
+   **direct** one.
+2. On your machine, point `.env` at Neon once and fill the database:
+   `DATABASE_URL=<pooled>` and `DIRECT_URL=<direct>`, then `npx prisma migrate deploy` and
+   `npx prisma db seed`. Put your local URL back afterwards.
+3. Vercel: import the repo, set **Root Directory** to `app`, Build Command `npm run vercel-build`,
+   and add the environment variables `DATABASE_URL` (pooled) and `DIRECT_URL` (direct).
+4. Deploy. Every later deploy runs `prisma migrate deploy` before the build, so new migrations
+   reach the database automatically.
+
+Never put real patient data into the demo deployment (PDPA, see `../rule.md`).
 
 ## Where things are
 
@@ -35,8 +66,10 @@ npx tsc --noEmit && npm run lint
 | `src/lib/audit.ts` | PBI-12 audit log helper (IDs only, no names/lab values; stores a short device summary, no IP) |
 | `src/lib/audit-text.ts`, `audit-filters.ts` | Audit log as readable Thai (who/what/where/how), 90-day retention constant, filters |
 | `prisma/schema.prisma` | Database tables |
-| `prisma/migrations/*auditlog_append_only` | DB triggers that block UPDATE/DELETE on the audit log (CCA §26) |
-| `prisma/migrations/*audit_db_changes` | DB triggers that log account and record changes made outside the app |
+| `prisma/migrations/*audit_triggers` | DB triggers: audit log append-only (CCA §26), and logging of any change made outside the app |
+| `src/lib/actor.ts` | Marks the app's own writes so the DB triggers don't report them as outside changes |
+| `src/lib/criteria.ts`, `settings.ts` | Criteria versions and system switches the admin edits |
+| `src/app/admin/` | Hospital back office pages |
 | `src/app/login/` | Login page + form |
 | `src/app/patients/` | Patient list/search, `new/` add patient (PBI-04), `[id]/screen/` 13-item form (PBI-05) |
 | `src/app/screenings/[id]/` | Step 3 result (PBI-07) · `next/` step 4 alert or Sick Day advice · `confirm/` step 5 e-signature (PBI-11) + case closed |

@@ -45,14 +45,49 @@ const ACTIONS: Record<string, { label: string; category: Category; warn?: boolea
   "audit.view": { label: "เปิดบันทึกการใช้งาน", category: "admin" },
   "audit.export": { label: "ดาวน์โหลดบันทึกการใช้งาน", category: "admin" },
   "audit.view.denied": { label: "เปิดบันทึกการใช้งานโดยไม่มีสิทธิ์ ระบบไม่ให้เข้า", category: "admin", warn: true },
-  // Written by database triggers (migration audit_db_changes), not by the app.
-  "db.user.create": { label: "สร้างบัญชีผู้ใช้", category: "db" },
+  // v2 (17 Nov 2026): admin back office, clinician follow-up, edit lock, criteria, settings, manuals
+  "patient.duplicate.blocked": { label: "เพิ่มผู้ป่วยซ้ำกับหน่วยอื่น ระบบแนะนำให้ไปหน่วยเดิม", category: "patient", warn: true },
+  "patient.duplicate.found": { label: "เพิ่มผู้ป่วยที่มีอยู่แล้ว ระบบพาไปหน้าผู้ป่วยเดิม", category: "patient" },
+  "patient.claim": { label: "รับผู้ป่วยที่ยังไม่มีหน่วยประจำเข้าหน่วยตัวเอง", category: "patient" },
+  "screening.update": { label: "แก้ไขผลคัดกรองก่อนยืนยัน", category: "screening" },
+  "screening.edit.locked": { label: "พยายามแก้ผลคัดกรองที่ยืนยันแล้ว ระบบไม่ให้แก้", category: "screening", warn: true },
+  "followup.save": { label: "บันทึกการดำเนินการของแพทย์/พยาบาล", category: "hospital" },
+  "admin.dashboard.view": { label: "เปิดภาพรวมระบบ", category: "admin" },
+  "admin.user.create": { label: "สร้างบัญชีผู้ใช้", category: "admin" },
+  "admin.user.update": { label: "แก้ไขบัญชีผู้ใช้", category: "admin" },
+  "admin.user.reset": { label: "ตั้งรหัสผ่านชั่วคราวใหม่", category: "admin" },
+  "admin.user.deactivate": { label: "ปิดการใช้งานบัญชี", category: "admin", warn: true },
+  "admin.user.activate": { label: "เปิดการใช้งานบัญชี", category: "admin" },
+  "admin.facility.create": { label: "เพิ่มหน่วยบริการ", category: "admin" },
+  "admin.facility.update": { label: "แก้ไขหน่วยบริการ", category: "admin" },
+  "admin.patient.verify": { label: "ยืนยันตัวตนผู้ป่วย", category: "admin" },
+  "admin.patient.update": { label: "แก้ไขข้อมูลผู้ป่วย (มีเหตุผลกำกับ)", category: "admin" },
+  "admin.patient.deactivate": { label: "ปิดใช้งานผู้ป่วย", category: "admin", warn: true },
+  "admin.patient.activate": { label: "เปิดใช้งานผู้ป่วยอีกครั้ง", category: "admin" },
+  "admin.screening.update": { label: "แก้ไขผลคัดกรองที่ยืนยันแล้ว (มีเหตุผลกำกับ)", category: "admin", warn: true },
+  "admin.criteria.update": { label: "แก้ไขเกณฑ์การประเมิน", category: "admin", warn: true },
+  "admin.settings.update": { label: "แก้ไขการตั้งค่าระบบ", category: "admin" },
+  "admin.manual.upload": { label: "อัปโหลดคู่มือ", category: "admin" },
+  "admin.manual.remove": { label: "ซ่อนคู่มือ", category: "admin" },
+  "manual.download": { label: "เปิดคู่มือ", category: "patient" },
+  "account.password.change": { label: "เปลี่ยนรหัสผ่าน", category: "auth" },
+  "login.inactive": { label: "บัญชีที่ถูกปิดพยายามเข้าสู่ระบบ", category: "auth", warn: true },
+  // Written by database triggers (migration audit_triggers) for changes made outside the app.
+  "db.user.insert": { label: "สร้างบัญชีผู้ใช้", category: "db", warn: true },
   "db.user.update": { label: "แก้ไขบัญชีผู้ใช้", category: "db", warn: true },
   "db.user.delete": { label: "ลบบัญชีผู้ใช้", category: "db", warn: true },
   "db.patient.update": { label: "แก้ไขข้อมูลผู้ป่วย", category: "db", warn: true },
   "db.patient.delete": { label: "ลบข้อมูลผู้ป่วย", category: "db", warn: true },
   "db.screening.update": { label: "แก้ไขผลคัดกรอง", category: "db", warn: true },
   "db.screening.delete": { label: "ลบผลคัดกรอง", category: "db", warn: true },
+  "db.amendment.update": { label: "แก้ไขประวัติการแก้ไข", category: "db", warn: true },
+  "db.amendment.delete": { label: "ลบประวัติการแก้ไข", category: "db", warn: true },
+  "db.ruleset.insert": { label: "เพิ่มเกณฑ์การประเมิน", category: "db", warn: true },
+  "db.ruleset.update": { label: "แก้ไขเกณฑ์การประเมิน", category: "db", warn: true },
+  "db.ruleset.delete": { label: "ลบเกณฑ์การประเมิน", category: "db", warn: true },
+  "db.facility.insert": { label: "เพิ่มหน่วยบริการ", category: "db", warn: true },
+  "db.facility.update": { label: "แก้ไขหน่วยบริการ", category: "db", warn: true },
+  "db.facility.delete": { label: "ลบหน่วยบริการ", category: "db", warn: true },
 };
 
 export function describeAction(code: string) {
@@ -72,6 +107,9 @@ export function describeTarget(entity: string | null, id: number | null): string
   if (entity === "Screening") return `เคสคัดกรอง #${id}`;
   if (entity === "Patient") return `ผู้ป่วย #${id}`;
   if (entity === "User") return `บัญชีผู้ใช้ #${id}`;
+  if (entity === "Facility") return `หน่วยบริการ #${id}`;
+  if (entity === "RuleSet") return `เกณฑ์ #${id}`;
+  if (entity === "Manual") return `คู่มือ #${id}`;
   return `${entity} #${id}`;
 }
 
@@ -97,6 +135,7 @@ export function describeDetail(action: string, detail: string | null): string {
   if (detail === "account=exists") return "รหัสผ่านไม่ถูกต้อง";
   if (detail === "area=hospital") return "หน้าของโรงพยาบาลแม่ข่าย";
   if (detail === "area=facility") return "หน้าของ รพ.สต.";
+  if (detail === "area=admin") return "หน้าผู้ดูแลระบบ";
   if (detail === "export") return "ดาวน์โหลด CSV";
   const parts: string[] = [];
   const filters = detail.match(/filters=(\S+)/)?.[1];
@@ -167,7 +206,7 @@ export function collapse<T extends { userId: number | null; username: string | n
   return out;
 }
 
-type AuditUser = { id: number; username: string; displayName: string; role: string; facility: string };
+type AuditUser = { id: number; username: string; displayName: string; role: string; facility: string | null };
 type AuditRow = { userId: number | null; username: string | null; action: string; entity: string | null; entityId: number | null; detail: string | null; device: string | null };
 
 // One row as people read it, shared by the page and the CSV download so both always agree.
@@ -179,7 +218,7 @@ export function describeRow(r: AuditRow, users: AuditUser[]) {
   }
   if (r.userId !== null) {
     const u = users.find((x) => x.id === r.userId);
-    if (u) return { ...base, who: u.displayName, whoNote: ROLE_LABEL[u.role] ?? u.role, facility: u.facility };
+    if (u) return { ...base, who: u.displayName, whoNote: ROLE_LABEL[u.role] ?? u.role, facility: u.facility ?? "รพ.เชียงรายประชานุเคราะห์" };
     // The account was removed later; the log keeps the name it had at the time.
     return { ...base, who: `บัญชี ${r.username ?? `#${r.userId}`}`, whoNote: "บัญชีนี้ถูกลบแล้ว", facility: "" };
   }

@@ -4,8 +4,8 @@ import { REPORT_COLUMNS, reportRow, toCsv } from "./report";
 
 const row = {
   createdAt: new Date("2026-10-07T09:00:00+07:00"),
-  egfr: 38, bmi: 20.83, doseMgDay: 2000, doseCheck: "exceeds", scoreEgfr: 1, scoreBmi: 2, scoreAlcohol: 0, riskScore: 3,
-  vomiting: true, lowIntake: false, nsaid: false, herbal: true,
+  egfr: 38, bmi: 20.83, doseMgDay: 2000, doseCheck: "exceeds", scoreEgfr: 1, scoreBmi: 2, scoreAlcohol: 0, riskScore: 3, riskGroup: true,
+  vomiting: true, lowIntake: false, nsaid: false, herbal: true, facility: "รพ.สต.บ้านดู่",
   patient: { hn: "67-014822", name: "นาง สมหญิง จันทร์เพ็ญ", sex: "หญิง", dob: "14/02/2501", facility: "รพ.สต.บ้านดู่" },
 };
 
