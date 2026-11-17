@@ -25,12 +25,12 @@ type Row = { key: number; unitId: string; amount: string };
 let nextKey = 1; // each row gets its own React key, so deleting a middle row can't mix rows up
 const newRow = (): Row => ({ key: nextKey++, unitId: "", amount: "" });
 
-export function AlcoholSection({ sex, error }: { sex: string; error?: string }) {
-  const [drinks, setDrinks] = useState<YN>("no");
+export function AlcoholSection({ sex, error, initial }: { sex: string; error?: string; initial?: { drinks: YN; binge: YN; regular: YN } }) {
+  const [drinks, setDrinks] = useState<YN>(initial?.drinks ?? "no");
   const [rows, setRows] = useState<Row[]>(() => [newRow()]);
   const [days, setDays] = useState<number | null>(null);
   // Manual answers win over the calculated ones until the calculator inputs change again.
-  const [override, setOverride] = useState<{ binge?: YN; regular?: YN }>({});
+  const [override, setOverride] = useState<{ binge?: YN; regular?: YN }>(initial?.drinks === "yes" ? { binge: initial.binge, regular: initial.regular } : {});
   const boxRef = useRef<HTMLDivElement>(null);
 
   // When "ดื่ม" is picked, the follow-up box slides in (CSS animation) and is scrolled into view

@@ -32,9 +32,10 @@ export function whereFor(f: CaseFilters, dateField: "createdAt" | "acknowledgedA
     // (a required column). Overrides any base condition on the same field, which is fine here.
     ...(since ? { [dateField]: { gte: since } } : {}),
     ...(f.result === "alert" ? { isAlert: true } : f.result === "noalert" ? { isAlert: false } : {}),
+    // the unit where the screening was done
+    ...(f.fac ? { facility: f.fac } : {}),
     patient: {
-      ...(f.fac ? { facility: f.fac } : {}),
-      ...(f.q ? { OR: [{ name: { contains: f.q } }, { hn: { contains: f.q } }] } : {}),
+      ...(f.q ? { OR: [{ name: { contains: f.q, mode: "insensitive" } }, { hn: { contains: f.q } }] } : {}),
     },
   };
 }

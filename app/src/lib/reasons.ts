@@ -9,6 +9,7 @@ type AlertFacts = {
   egfr: number;
   bmi: number;
   riskScore: number;
+  riskGroup: boolean;
   scoreEgfr: number;
   scoreBmi: number;
   scoreAlcohol: number;
@@ -29,6 +30,6 @@ export function alertReasons(s: AlertFacts): string[] {
   const r: string[] = [];
   if (s.doseCheck === "contraindicated") r.push(`eGFR ${fmt(s.egfr)} ห้ามใช้ Metformin`);
   if (s.doseCheck === "exceeds") r.push(`ยา ${s.doseMgDay} มก./วัน เกินเกณฑ์ ${s.maxDoseMgDay} (eGFR ${fmt(s.egfr)})`);
-  if (s.riskScore >= 2) r.push(`เสี่ยง MALA ${s.riskScore} คะแนน: ${riskFactors(s)}`);
+  if (s.riskGroup) r.push(`เสี่ยง MALA ${s.riskScore} คะแนน: ${riskFactors(s)}`);
   return r;
 }

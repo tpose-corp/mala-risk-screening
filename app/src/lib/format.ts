@@ -1,9 +1,9 @@
 // Thai date/time helpers (Bangkok time) and shared labels.
 const TZ = "Asia/Bangkok";
 
-// "7 ต.ค. 2569 09:14"
+// "7 ต.ค. 2569 09:14 น." Every step in the app shows its date and time this way (17 Nov requirement).
 export function thaiDateTime(d: Date) {
-  return d.toLocaleString("th-TH", { timeZone: TZ, day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString("th-TH", { timeZone: TZ, day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) + " น.";
 }
 
 // "7 ต.ค. 2569"
@@ -95,8 +95,28 @@ export type TriggerKey = keyof typeof TRIGGER_LABEL;
 export const TRIGGER_KEYS = Object.keys(TRIGGER_LABEL) as TriggerKey[];
 
 export const ROLE_LABEL: Record<string, string> = {
-  nurse: "พยาบาลวิชาชีพ",
-  pharmacist: "เภสัชกร",
-  doctor: "แพทย์",
-  admin: "ผู้ดูแลระบบ",
+  admin: "ผู้ดูแลระบบ (รพ.)",
+  clinician: "แพทย์ / พยาบาล (รพ.)",
+  pcu: "เจ้าหน้าที่ รพ.สต.",
 };
+
+// 13-digit Thai national ID (เลขประจำตัวประชาชน). Thai digits and dashes/spaces are accepted.
+export function normalizeCardId(raw: string): string {
+  return raw.replace(/[๐-๙]/g, (d) => String(THAI_DIGITS.indexOf(d))).replace(/\D/g, "");
+}
+// Standard mod-11 check on the last digit. A failed check is only a WARNING in this app:
+// the hospital's synthetic test file deliberately uses IDs that fail it.
+export function cardIdChecksumOk(id: string): boolean {
+  if (!/^\d{13}$/.test(id)) return false;
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += Number(id[i]) * (13 - i);
+  return (11 - (sum % 11)) % 10 === Number(id[12]);
+}
+// "1-2345-67890-12-3"
+export function formatCardId(id: string): string {
+  return /^\d{13}$/.test(id) ? `${id[0]}-${id.slice(1, 5)}-${id.slice(5, 10)}-${id.slice(10, 12)}-${id[12]}` : id;
+}
+// รพ.สต. staff see only the last 4 digits (PDPA data minimisation).
+export function maskCardId(id: string): string {
+  return /^\d{13}$/.test(id) ? `x-xxxx-xxxxx-${id.slice(10, 12)}-${id[12]}` : "xxxxxxxxxxxxx";
+}

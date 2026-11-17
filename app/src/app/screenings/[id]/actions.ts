@@ -2,6 +2,7 @@
 
 import { RedirectType, redirect } from "next/navigation";
 import { tasksFor } from "@/lib/advice";
+import { asActor } from "@/lib/actor";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { requireFacilityStaff } from "@/lib/session";
@@ -13,7 +14,7 @@ export type FormState = { error?: string } | undefined;
 async function findForUser(screeningId: number) {
   const user = await requireFacilityStaff();
   const screening = await db.screening.findFirst({
-    where: { id: screeningId, patient: { facility: user.facility } },
+    where: { id: screeningId, OR: [{ facility: user.facility }, { patient: { facility: user.facility } }] },
   });
   return { user, screening };
 }
@@ -25,7 +26,7 @@ export async function markAdviceGiven(screeningId: number, _prev: FormState, for
   if (formData.get("advised") !== "on") return { error: "กรุณายืนยันว่าได้แจ้งคำแนะนำให้ผู้ป่วยแล้ว" };
 
   if (!screening.adviceGivenAt) {
-    await db.screening.update({ where: { id: screeningId }, data: { adviceGivenAt: new Date() } });
+    await asActor(user.id, (tx) => tx.screening.update({ where: { id: screeningId }, data: { adviceGivenAt: new Date() } }));
     await audit({ user, action: "advice.given", entity: "Screening", entityId: screeningId });
   }
   redirect(`/screenings/${screeningId}/confirm`, RedirectType.replace);
@@ -42,10 +43,10 @@ export async function confirmScreening(screeningId: number, _prev: FormState, fo
   const note = String(formData.get("note") ?? "").trim().slice(0, 1000);
 
   // `confirmedAt: null` in the WHERE means: only succeed if nobody confirmed it yet.
-  const { count } = await db.screening.updateMany({
+  const { count } = await asActor(user.id, (tx) => tx.screening.updateMany({
     where: { id: screeningId, confirmedAt: null },
     data: { confirmedAt: new Date(), confirmedById: user.id, confirmNote: note || null },
-  });
+  }));
   if (count === 0) {
     await audit({ user, action: "screening.confirm.rejected", entity: "Screening", entityId: screeningId, detail: "already confirmed" });
     return { error: "เคสนี้ถูกยืนยันไปแล้ว แก้ไขซ้ำไม่ได้" };

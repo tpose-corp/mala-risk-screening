@@ -10,7 +10,7 @@ export async function loadScreening(rawId: string, user: CurrentUser) {
   const id = Number(rawId);
   const s = Number.isInteger(id)
     ? await db.screening.findFirst({
-        where: { id, patient: { facility: user.facility } },
+        where: { id, OR: [{ facility: user.facility! }, { patient: { facility: user.facility } }] },
         include: { patient: true, screener: true, confirmedBy: true, acknowledgedBy: true },
       })
     : null;

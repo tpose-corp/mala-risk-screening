@@ -34,3 +34,6 @@ export function periodStart(id: string, now = new Date()): Date | null {
 
 const nf = new Intl.NumberFormat("th-TH");
 export const num = (n: number) => nf.format(n);
+
+// Page sizes people can pick on long lists ("แสดงหน้าละ"). Default 20 fits one laptop screen or so.
+export const PER_PAGE_CHOICES = [10, 20, 50, 100];

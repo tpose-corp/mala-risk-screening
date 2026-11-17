@@ -10,12 +10,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Pager } from "@/components/list-controls";
 import { Topbar } from "@/components/topbar";
+import { PerPage } from "@/components/ui/per-page";
+import { PageHead } from "@/components/ui/card";
+import { FilterGroup, FilterPanel } from "@/components/ui/filter-panel";
+import { DownloadIcon } from "@/components/ui/icons";
 import { audit } from "@/lib/audit";
 import { auditQuery, auditWhere, hasAuditFilters, readAuditFilters } from "@/lib/audit-filters";
 import { AUDIT_RETENTION_DAYS, CATEGORY_LABEL, WARN_ACTIONS, collapse, describeRow, retentionStatus } from "@/lib/audit-text";
 import { db } from "@/lib/db";
 import { thaiDate } from "@/lib/format";
-import { num, pageInfo, periodStart } from "@/lib/paging";
+import { PER_PAGE_CHOICES, num, pageInfo, periodStart } from "@/lib/paging";
 import { requireUser } from "@/lib/session";
 
 const PER_PAGE = 100;
@@ -36,7 +40,8 @@ export default async function AuditPage({ searchParams }: PageProps<"/audit">) {
   const where = auditWhere(f);
 
   const total = await db.auditLog.count({ where });
-  const pg = pageInfo(total, sp.page, PER_PAGE);
+  const per = PER_PAGE_CHOICES.includes(Number(sp.per)) ? Number(sp.per) : PER_PAGE;
+  const pg = pageInfo(total, sp.page, per);
   const logs = await db.auditLog.findMany({ where, orderBy: { id: "desc" }, skip: pg.skip, take: pg.take });
   const users = await db.user.findMany({ orderBy: [{ facility: "asc" }, { displayName: "asc" }] });
 
@@ -53,16 +58,9 @@ export default async function AuditPage({ searchParams }: PageProps<"/audit">) {
   return (
     <>
       <Topbar menu="audit" crumb="บันทึกการใช้งาน" />
-      <main className="page">
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div>
-            <h1 className="h1">บันทึกการใช้งาน</h1>
-            <div className="sub">ใครทำอะไรในระบบ เมื่อไหร่ จากหน่วยบริการและอุปกรณ์ไหน ตาม พ.ร.บ. คอมพิวเตอร์ มาตรา 26 ไม่มีชื่อผู้ป่วยหรือค่าแล็บในบันทึก</div>
-          </div>
-          <a href={`/audit/export${auditQuery(f)}`} className="btn-s primary">
-            ดาวน์โหลด CSV{hasAuditFilters(f) ? ` ${num(total)} รายการที่กรอง` : ""}
-          </a>
-        </div>
+      <main className="ui-page">
+        <PageHead sticky title="บันทึกการใช้งาน" subtitle="ใครทำอะไรในระบบ เมื่อไหร่ จากหน่วยบริการและอุปกรณ์ไหน ตาม พ.ร.บ. คอมพิวเตอร์ มาตรา 26 ไม่มีชื่อผู้ป่วยหรือค่าแล็บในบันทึก"
+          actions={<a href={`/audit/export${auditQuery(f)}`} className="ui-export"><DownloadIcon />ส่งออก CSV{hasAuditFilters(f) ? ` ${num(total)} รายการที่กรอง` : ""}</a>} />
 
         <div className="stats">
           <div className="card pad">
@@ -82,21 +80,28 @@ export default async function AuditPage({ searchParams }: PageProps<"/audit">) {
           </div>
         </div>
 
-        <form className="filters audit-filters" action="/audit">
-          <select className="fld" name="who" defaultValue={f.who} aria-label="ผู้ใช้">
-            <option value="">ทุกคน</option>
-            {users.map((u) => <option key={u.id} value={u.username}>{u.displayName} ({u.facility})</option>)}
-          </select>
-          <select className="fld" name="cat" defaultValue={f.cat} aria-label="ประเภท">
-            <option value="">ทุกประเภท</option>
-            {Object.entries(CATEGORY_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
-          <label className="fld-l">ตั้งแต่<input className="fld" type="date" name="from" defaultValue={f.from} /></label>
-          <label className="fld-l">ถึง<input className="fld" type="date" name="to" defaultValue={f.to} /></label>
-          <label className="fld-c"><input type="checkbox" name="warn" value="1" defaultChecked={f.warn} />เฉพาะที่ไม่สำเร็จหรือถูกปฏิเสธ</label>
-          <button className="btn-s primary" type="submit">ค้นหา</button>
-          {hasAuditFilters(f) && <Link href="/audit" className="btn-s">ล้างตัวกรอง</Link>}
-        </form>
+        <FilterPanel action="/audit" hidden={per !== PER_PAGE ? { per: String(per) } : {}} activeCount={[f.who, f.cat, f.from || f.to, f.warn].filter(Boolean).length} clearHref="/audit">
+          <FilterGroup label="ผู้ใช้">
+            <select className="ui-select" name="who" defaultValue={f.who}>
+              <option value="">ทุกคน</option>
+              {users.map((u) => <option key={u.id} value={u.username}>{u.displayName} ({u.facility ?? "รพ."})</option>)}
+            </select>
+          </FilterGroup>
+          <FilterGroup label="ประเภท">
+            <select className="ui-select" name="cat" defaultValue={f.cat}>
+              <option value="">ทุกประเภท</option>
+              {Object.entries(CATEGORY_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </FilterGroup>
+          <FilterGroup label="ช่วงวันที่">
+            <input className="ui-select" type="date" name="from" defaultValue={f.from} aria-label="ตั้งแต่" />
+            <span className="ui-hint" style={{ alignSelf: "center" }}>ถึง</span>
+            <input className="ui-select" type="date" name="to" defaultValue={f.to} aria-label="ถึง" />
+          </FilterGroup>
+          <FilterGroup label="ตัวเลือก">
+            <label className="ui-chip"><input type="checkbox" name="warn" value="1" defaultChecked={f.warn} />เฉพาะที่ไม่สำเร็จหรือถูกปฏิเสธ</label>
+          </FilterGroup>
+        </FilterPanel>
 
         <div className="card" style={{ overflowX: "auto" }}>
           <table className="plist audit">
@@ -138,7 +143,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/audit">) {
             </tbody>
           </table>
         </div>
-        <Pager pg={pg} href={(p) => `/audit${auditQuery(f, p > 1 ? { page: p } : {})}`} unit="รายการ" />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}><PerPage value={per} /><Pager pg={pg} href={(p) => `/audit${auditQuery(f, { ...(per !== PER_PAGE ? { per } : {}), ...(p > 1 ? { page: p } : {}) })}`} unit="รายการ" /></div>
         <div className="note">เวลาทั้งหมดเป็นเวลาประเทศไทย (UTC+7) ตามนาฬิกาของเซิร์ฟเวอร์</div>
       </main>
     </>

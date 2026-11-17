@@ -1,68 +1,56 @@
 // /login — the page itself is a Server Component; only the form inside is a Client Component.
-// Left panel kept plain on purpose, like an institutional system's sign-in page:
-// organisation, system name, usage notice, version. No decorative graphics.
+// Layout modelled on the team's printing-request system login, in the hospital colours.
+// Motion is kept small on purpose (NN/g: 100 to 500 ms, feedback over decoration): one short
+// fade-in on load, then only responses to what the user does (focus, press, loading, wrong
+// password). Nothing loops. All motion is off for people who prefer reduced motion.
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { redirect } from "next/navigation";
-import { getCurrentUser, isHospital } from "@/lib/session";
+import { getCurrentUser, homeOf } from "@/lib/session";
+import { EcgLine } from "./ecg-line";
+import { Emblem } from "./emblem";
 import { LoginForm } from "./login-form";
 
-// Drop an approved logo file at app/public/logo.png and it replaces the nurse icon; no code change.
+// Drop an approved logo file at app/public/logo.png and it replaces the heart mark; no code change.
 const hasLogo = existsSync(path.join(process.cwd(), "public", "logo.png"));
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
-  if (user) redirect(isHospital(user) ? "/hospital" : "/patients"); // already logged in
+  if (user) redirect(homeOf(user.role)); // already logged in
 
   return (
-    <main className="login">
-      <section className="left">
-        <div className="org">
-          <div className="logo-slot">
-            {hasLogo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src="/logo.png" alt="โลโก้หน่วยงาน" />
-            ) : (
-              <NurseMark />
-            )}
-          </div>
-          <div>
-            <div className="org-name">เครือข่ายหน่วยบริการปฐมภูมิ</div>
-            <div className="org-sub">อำเภอเมือง จังหวัดเชียงราย</div>
-          </div>
-        </div>
+    <main className="lg">
+      <div className="lg-bg" aria-hidden="true" />
 
-        <div className="system">
-          <h1 className="title">ระบบคัดกรองความเสี่ยงภาวะ MALA</h1>
-          <div className="title-en">Metformin-Associated Lactic Acidosis Risk Screening</div>
-          <p className="desc">สำหรับบุคลากรในหน่วยบริการปฐมภูมิ ใช้คัดกรองผู้ป่วยเบาหวานที่ได้รับยา Metformin และส่งต่อโรงพยาบาลแม่ข่าย</p>
-        </div>
+      <section className="lg-brand">
+        <Emblem>
+          {hasLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/logo.png" alt="โลโก้หน่วยงาน" />
+          ) : (
+            // heart with a small plus: care, not alarm (the ECG mark felt scary here)
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7z" />
+              <path d="M12 8.6v5M9.5 11.1h5" />
+            </svg>
+          )}
+        </Emblem>
 
-        <div className="notice">
+        <p className="lg-org rise d1">โรงพยาบาลเชียงรายประชานุเคราะห์ และเครือข่ายหน่วยบริการปฐมภูมิ</p>
+        <h1 className="lg-title rise d2">ระบบคัดกรองความเสี่ยง<br />ภาวะ <span className="accent">MALA</span></h1>
+        <p className="lg-en rise d3">Metformin-Associated Lactic Acidosis Risk Screening</p>
+
+        <EcgLine className="lg-ecg rise d3" />
+
+        <p className="lg-notice rise d4">
           สำหรับเจ้าหน้าที่ที่ได้รับอนุญาตเท่านั้น การเข้าใช้งานทุกครั้งถูกบันทึกตาม พ.ร.บ. ว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์
-        </div>
-
-        <div className="foot">
-          <span>เวอร์ชัน 0.1 ทดลองใช้</span>
-          <span>โครงการพัฒนาร่วมกับ รพ.เชียงรายประชานุเคราะห์</span>
-        </div>
+        </p>
       </section>
 
-      <section className="right">
+      <section className="lg-side">
         <LoginForm />
+        <p className="lg-foot">เวอร์ชัน 2.0 โครงการพัฒนาร่วมกับ รพ.เชียงรายประชานุเคราะห์</p>
       </section>
     </main>
-  );
-}
-
-// Nurse cap with a cross: same drawing as the browser-tab icon (src/app/icon.svg).
-function NurseMark() {
-  return (
-    <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M13 41c0-13 8.5-21 19-21s19 8 19 21z" fill="#5e1146" />
-      <rect x="10" y="40" width="44" height="8" rx="4" fill="#5e1146" />
-      <rect x="29" y="25" width="6" height="13" rx="1.5" fill="#fff" />
-      <rect x="25.5" y="28.5" width="13" height="6" rx="1.5" fill="#fff" />
-    </svg>
   );
 }

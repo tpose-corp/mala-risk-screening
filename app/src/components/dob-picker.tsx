@@ -83,6 +83,7 @@ export function DobPicker({ error }: { error?: string }) {
       </div>
       {calOpen && (
         <ThaiCalendar
+            label="เลือกวันเกิดจากปฏิทิน"
           selected={valid ? { day: Number(day), month: Number(month), yearBE: y } : null}
           initial={calInitial}
           onClose={closeCal}

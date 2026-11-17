@@ -1,5 +1,5 @@
 // CCA §26 (rule.md): the audit log must never be edited or deleted. The database blocks it
-// (migration auditlog_append_only); this test also fails if app code ever tries.
+// (migration audit_triggers); this test also fails if app code ever tries.
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -24,8 +24,9 @@ describe("audit log is append-only in the code too", () => {
       .filter((d) => statSync(join(m, d)).isDirectory())
       .map((d) => readFileSync(join(m, d, "migration.sql"), "utf8"))
       .join("\n");
-    expect(sql).toContain('CREATE TRIGGER "AuditLog_no_update"');
-    expect(sql).toContain('CREATE TRIGGER "AuditLog_no_delete"');
+    // One trigger blocks both UPDATE and DELETE (PostgreSQL), another blocks TRUNCATE.
+    expect(sql).toMatch(/CREATE TRIGGER "AuditLog_no_update" BEFORE UPDATE OR DELETE ON "AuditLog"/);
+    expect(sql).toContain('CREATE TRIGGER "AuditLog_no_truncate"');
     expect(sql).not.toMatch(/DROP TRIGGER\s+(IF EXISTS\s+)?"?AuditLog_no_/);
   });
 });
