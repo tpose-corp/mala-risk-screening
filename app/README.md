@@ -50,11 +50,14 @@ npx tsc --noEmit && npm run lint
    `DATABASE_URL=<pooled>` and `DIRECT_URL=<direct>`, then `npx prisma migrate deploy` and
    `npx prisma db seed`. Put your local URL back afterwards.
 3. Vercel: import the repo, set **Root Directory** to `app`, Build Command `npm run vercel-build`,
-   and add the environment variables `DATABASE_URL` (pooled) and `DIRECT_URL` (direct).
+   and add the environment variables `DATABASE_URL` (pooled) and `DIRECT_URL` (direct) as Secret,
+   Production only. `vercel.json` runs the server code in Singapore (`sin1`), next to Neon; without
+   it the code runs in the USA and every page is several seconds slower.
 4. Deploy. Every later deploy runs `prisma migrate deploy` before the build, so new migrations
    reach the database automatically.
 
 Never put real patient data into the demo deployment (PDPA, see `../rule.md`).
+Live: https://mala-risk-screening.vercel.app. More in `../.docs/final/deployment.md`.
 
 ## Where things are
 
@@ -62,6 +65,8 @@ Never put real patient data into the demo deployment (PDPA, see `../rule.md`).
 |---|---|
 | `src/lib/rules.ts` | **PBI-06 rule engine** — plain functions, no AI. Every threshold traces to `intent.md` |
 | `src/lib/rules.test.ts` | Unit tests, one per row of `test-plan.md` PBI-06 |
+| `src/lib/v2.test.ts` | v2 tests: alert kinds, editable criteria, national ID, passwords |
+| `scripts/eval-rule-cases.ts` | Runs rule cases R-01 to R-11 from `test-plan.md` 6.2; output in `../test/results/` |
 | `src/lib/session.ts` | PBI-01 login sessions (httpOnly cookie, only a hash stored in DB) |
 | `src/lib/audit.ts` | PBI-12 audit log helper (IDs only, no names/lab values; stores a short device summary, no IP) |
 | `src/lib/audit-text.ts`, `audit-filters.ts` | Audit log as readable Thai (who/what/where/how), 90-day retention constant, filters |
@@ -73,7 +78,7 @@ Never put real patient data into the demo deployment (PDPA, see `../rule.md`).
 | `src/app/login/` | Login page + form |
 | `src/app/patients/` | Patient list/search, `new/` add patient (PBI-04), `[id]/screen/` 13-item form (PBI-05) |
 | `src/app/screenings/[id]/` | Step 3 result (PBI-07) · `next/` step 4 alert or Sick Day advice · `confirm/` step 5 e-signature (PBI-11) + case closed |
-| `src/app/hospital/` | Referral hospital: alert inbox with "รับเรื่องแล้ว" (core 3, in-app), `cases/` every case + `export/` CSV in the hospital's report layout (core 2) |
+| `src/app/hospital/` | Referral hospital: two-tab alert inbox (ใช้ยาเกินขนาด first) with "รับเรื่องแล้ว" and follow-up note, `cases/` every case, `areas/` NSAID and herbal summary per unit, `export/` CSV in the hospital's report layout (admin only) |
 | `src/lib/alcohol.ts` | Everyday drinking answers → standard drinks → checklist 9.2.1 / 9.2.2 |
 | `src/lib/advice.ts` | What the screener must do and the patient advice text, per the hospital outline |
 | `src/app/hospital/patients/[id]/` | Referral hospital: one patient's screening history |
@@ -84,11 +89,11 @@ Never put real patient data into the demo deployment (PDPA, see `../rule.md`).
 | PBI | Status |
 |---|---|
 | PBI-01 Login | ✅ success/failure/logout logged; pages redirect to `/login` without a session |
-| PBI-04 Add patient | ✅ name + DOB required, HN optional |
+| PBI-04 Add patient | ✅ name, DOB and 13-digit national ID required; duplicate ID at another unit refused; HN added by the admin on verification |
 | PBI-05 13-item form | ✅ server-side validation, live BMI + eGFR meter |
-| PBI-06 Rule engine | ✅ deterministic, 20 unit tests |
+| PBI-06 Rule engine | ✅ deterministic; 11 of 11 rule cases (`scripts/eval-rule-cases.ts`); thresholds editable by the admin as versions |
 | PBI-07 Result | ✅ alert / no-alert with reasons in plain Thai |
-| PBI-11 Confirm | ✅ stores who/when/rule version; can't be confirmed twice |
+| PBI-11 Confirm | ✅ stores who/when/rule version; can't be confirmed twice; locked afterwards, admin amendments keep old and new values (PBI-14) |
 | PBI-12 Audit log | ✅ append-only at DB level; admin-only viewer with filters and CSV; see the CCA §26 table below |
 
 MVP core capabilities (`proposal.md` / `README.md`):
@@ -96,11 +101,14 @@ MVP core capabilities (`proposal.md` / `README.md`):
 | Core | Status |
 |---|---|
 | 1. Screen the patient | ✅ |
-| 2. Send every case to the hospital for analysis | ✅ hospital sees every case in `/hospital/cases` and downloads CSV (report sheet columns) |
+| 2. Send every case to the hospital for analysis | ✅ hospital sees every case in `/hospital/cases`; the admin downloads CSV (report sheet columns) |
 | 3. Alert the hospital (app + LINE) / instant advice | ✅ in-app inbox with acknowledgement, auto-refresh every 10 s. LINE not built: waiting for the hospital to confirm the group and recipients |
 
+Built in v2 (17 Nov 2026): full RBAC with three roles (PBI-02) and amendment history for confirmed
+records (PBI-14).
+
 Not built yet: LINE delivery (PBI-08), AI-written advice (PBI-16, the app uses the hospital's
-own wording instead), full RBAC (PBI-02), MFA (PBI-17), consent notice (PBI-13), record versioning (PBI-14).
+own wording instead), MFA (PBI-17), consent notice (PBI-13).
 
 ## Audit log against `rule.md` (Computer Crime Act §26)
 
@@ -111,8 +119,8 @@ own wording instead), full RBAC (PBI-02), MFA (PBI-17), consent notice (PBI-13),
 | Log login, failed login, logout | `login.success`, `login.failed` (wrong password vs unknown account), `logout` |
 | Log opening a patient record, viewing results/eGFR/medication | `patient.view`, `screening.view`, `hospital.case.view`, `hospital.patient.history.view`, list views, CSV downloads |
 | Log creating/updating results, referral/escalation | `screening.create`, `alert.raised`, `advice.given`, `alert.acknowledge`, `screening.confirm` |
-| Log role/permission changes, account create/disable/delete, record archive/delete | The app has no screen for these, so DB triggers log any such change made outside the app (`db.user.*`, `db.patient.*`, `db.screening.*`), field names only |
-| Refused access | `access.denied` (wrong area), `record.denied` (another facility's record), `audit.view.denied`, `hospital.export.denied` |
+| Log role/permission changes, account create/disable/delete, record archive/delete | Admin screens log `admin.user.create`, `admin.user.update`, `admin.user.deactivate`, `admin.user.reset`, `admin.patient.deactivate`, `admin.screening.update`, `admin.criteria.update`, `admin.settings.update`. DB triggers also log any change made outside the app (`db.user.*`, `db.patient.*`, `db.screening.*`, `db.ruleset.*`), field names only |
+| Refused access | `access.denied` (wrong area), `record.denied` (another facility's record), `audit.view.denied`, `hospital.export.denied`, `patient.duplicate.blocked`, `screening.edit.locked` |
 | Reliable timestamps | Server clock, stored in UTC, shown in Thai time. The server must sync its clock (NTP) when deployed |
 | Protect logs from modification/deletion | Append-only triggers; no edit/delete button anywhere |
 | No passwords/tokens in logs | Passwords are never logged; a failed login keeps the typed username only if it is a real account (people type passwords into the username box). Session tokens are stored only as a hash and never logged |
@@ -150,5 +158,5 @@ the 13-item checklist, and the demo deck). Points that are our reading of them, 
 
 ## AI disclosure
 
-This app's code was written with AI assistance (Claude Code), reviewed and run by the team.
+This app's code was written with AI assistance (Claude Code), then run and checked by the team. Details: `../.docs/final/ai-logic.md`.
 The clinical criteria were not invented by the AI — they come from `thresholds/` via `intent.md`.

@@ -1,208 +1,257 @@
-# Diagrams — MALA Risk Screening (4 required for the W5 Gate)
+# Diagrams: MALA Risk Screening
 
-v3 — Sep 8, 2026 · rebuilt around the real clinical criteria in `thresholds/` (DOC-02) — see `../../intent.md` "Real clinical criteria received" and "Confirmed workflow model" for the source of every rule below. An editable draw.io version of these same 4 diagrams lives alongside this file at `mala-diagrams.drawio`.
+**v4, 18 Nov 2026.** Redrawn from the v2 code (`app/prisma/schema.prisma`, `app/src/`) after the
+hospital session on 17 Nov 2026 (`test/sessions/S01-2026-11-17-hospital-uat.md`).
 
-> **What changed from v2 (same day):** v2 modeled 3 named risk tiers with a doctor-recommendation loop for the lighter two. The real documents that arrived after v2 show a **binary** model instead (alert vs. no-alert), computed by a **deterministic rule engine** (not AI), with alerts going through **both the in-app system and a LINE group**, and AI used only to generate patient advice text and a **patient-facing chatbot** (confirmed) for the no-alert path. Still open, not resolved by this version: reconciling the outline's point-tally scoring against the demo's single 0–100 "Risk Score" — see `../../intent.md`. Do not use this as a final BUILD spec until that closes.
+> **What changed from v3 (8 Sep 2026):** three roles instead of one staff role; patients keyed by
+> national ID with admin verification; screenings locked after confirmation with an amendment
+> history; criteria stored as versions the admin can change; two alert kinds; the AI advice box
+> and the LINE channel are removed because they were not built. v3 is in the git history
+> (commit `fe4451b`). The draw.io file `mala-diagrams.drawio` still shows v3.
 
 ## 1. Use-case diagram
 
 ```mermaid
 flowchart LR
-  staff[["Front-line staff (รพ.สต.)"]]
-  doctor[["Doctor/Nurse, referral hospital\n(receives alert, manages patient)"]]
-  admin[["Admin"]]
-  patient[["Patient"]]
+  pcu[["รพ.สต. staff (pcu)\nown unit only"]]
+  cli[["Hospital doctor / nurse (clinician)\nall units, read-only, no export"]]
+  adm[["Hospital admin\nback office"]]
 
-  subgraph sys["MALA Risk Screening System"]
-    UC1((Log in))
-    UC2((Search / add patient))
-    UC3((Fill screening form\n13 real items))
-    UC4((Run rule engine\ndeterministic))
-    UC5((View result))
-    UC6((Alert hospital\napp + LINE, simultaneous))
-    UC6b((Hospital manages patient\nterminal))
-    UC7((Generate advice\nAI-assisted, no-alert case))
-    UC8((Deliver advice to patient))
-    UC9((Confirm / approve result))
-    UC10((Send data to hospital\nfor analysis — every case))
-    UC11((Manage user access RBAC))
-    UC12((View audit log))
-    UC13((Chatbot consult\npatient-facing — confirmed))
+  subgraph sys["MALA Risk Screening"]
+    L((Log in, change temporary password))
+    P1((Find patient in own unit))
+    P2((Add patient by national ID\nstatus pending))
+    S1((Fill 13-item form))
+    S2((Rule engine\ndeterministic))
+    S3((See result and Sick Day advice))
+    S4((Edit screening\nuntil confirmed))
+    S5((Confirm and close))
+    H1((Alert inbox\ntab 1 over-dose, tab 2 general risk))
+    H2((Acknowledge and write follow-up))
+    H3((View cases, patient history,\nNSAID and herbal per area))
+    A1((Verify patient, add HN))
+    A2((Amend confirmed screening\nwith reason))
+    A3((Manage accounts and units))
+    A4((Change criteria version))
+    A5((Switch system on or off per role))
+    A6((Upload manuals))
+    A7((Export CSV, view audit log))
   end
 
-  staff --> UC1
-  staff --> UC2
-  staff --> UC3
-  UC3 --> UC4
-  UC4 --> UC5
-  UC5 -. "dose mismatch OR risk score ≥2" .-> UC6
-  UC5 -. "neither triggers" .-> UC7
-  UC6 --> doctor
-  doctor --> UC6b
-  UC6 -. "records that it alerted" .-> UC9
-  UC7 --> UC8
-  UC8 --> UC9
-  UC9 -. include .-> UC10
-  UC3 -. include .-> UC12
-  UC9 -. include .-> UC12
-  patient -.-> UC13
-  admin --> UC11
-  admin --> UC12
+  pcu --> L
+  pcu --> P1
+  pcu --> P2
+  pcu --> S1
+  S1 -. include .-> S2
+  S2 --> S3
+  pcu --> S4
+  pcu --> S5
+  cli --> L
+  cli --> H1
+  cli --> H2
+  cli --> H3
+  adm --> L
+  adm --> H1
+  adm --> H3
+  adm --> A1
+  adm --> A2
+  adm --> A3
+  adm --> A4
+  adm --> A5
+  adm --> A6
+  adm --> A7
+  P2 -. "ID already at another unit: refused" .-> P2
 ```
 
 ## 2. ER diagram
 
+Ten tables. Every write is also recorded in `AuditLog` (not drawn as a relation; it keeps IDs only).
+
 ```mermaid
 erDiagram
-  USER ||--o{ SCREENING_RECORD : creates
+  FACILITY ||--o{ USER : "pcu staff work at"
+  FACILITY ||--o{ PATIENT : "home unit of"
+  FACILITY ||--o{ SCREENING : "done at"
+  USER ||--o{ SESSION : has
+  USER ||--o{ PATIENT : "creates / verifies"
+  USER ||--o{ SCREENING : "screens / confirms / acknowledges / follows up"
+  USER ||--o{ AMENDMENT : makes
+  USER ||--o{ RULESET : "saves"
+  USER ||--o{ MANUAL : uploads
+  PATIENT ||--o{ SCREENING : has
+  PATIENT ||--o{ AMENDMENT : "history of"
+
+  FACILITY {
+    int id PK
+    string code "optional unit code"
+    string name UK
+    bool active
+  }
   USER {
-    string user_id PK
-    string name
-    string role "staff | doctor | admin"
-    string facility
+    int id PK
+    string username UK
+    string passwordHash "bcrypt"
+    string role "admin | clinician | pcu"
+    string facility FK "pcu only"
+    string licenseNo
+    bool active
+    bool mustChangePassword
+    datetime lastLoginAt
   }
-  PATIENT ||--o{ SCREENING_RECORD : has
+  SESSION {
+    string id PK "sha256 of the cookie token"
+    int userId FK
+    datetime expiresAt
+  }
   PATIENT {
-    string patient_id PK
+    int id PK
+    string cardId UK "13-digit national ID"
+    string hn UK "added by admin"
     string name
-    string hn
-    date dob
+    string dob "Thai date"
     string sex
-    string facility
+    string facility FK "home unit"
+    string status "pending | verified"
+    bool active
+    datetime registeredAt
   }
-  SCREENING_RECORD ||--|| RULE_RESULT : produces
-  SCREENING_RECORD {
-    string screening_id PK
-    string patient_id FK
-    string created_by FK
-    datetime created_at
+  SCREENING {
+    int id PK
+    int patientId FK
+    string facility FK
+    int screenerId FK
+    float weightKg
+    float heightCm
     float egfr
-    float weight_kg
-    float height_cm
-    float metformin_dose_mg
-    string alcohol_level "none | occasional | regular | heavy"
-    boolean vomiting_diarrhea
-    boolean reduced_intake
-    boolean nsaid_use
-    boolean herbal_supplement_use
-    datetime analysis_sent_at "every case — sent to hospital"
+    string egfrDate
+    int doseMgDay
+    bool bingeDrinking
+    bool regularHeavyDrinking
+    bool vomiting
+    bool lowIntake
+    bool nsaid
+    string nsaidNote
+    bool herbal
+    string herbalNote
+    string ruleVersion
+    string doseCheck "ok | exceeds | contraindicated"
+    int riskScore
+    bool isAlert
+    string alertKind "dose | risk"
+    datetime acknowledgedAt
+    string followUpNote
+    datetime confirmedAt
+    int confirmedById FK
   }
-  RULE_RESULT {
-    string result_id PK
-    string screening_id FK
-    boolean dose_appropriate "CPG check: eGFR vs Metformin dose"
-    int bmi_computed "from weight/height"
-    int risk_score "eGFR<60=1 + BMI<23=2 + heavy alcohol=2"
-    boolean risk_alert "true if dose fails OR risk_score >= 2"
-    boolean sick_day_flag "true if any of: vomit/diarrhea, reduced intake, NSAIDs, herbs"
+  AMENDMENT {
+    int id PK
+    string entity "Patient | Screening"
+    int entityId
+    string field
+    string oldValue
+    string newValue
+    string reason
+    int byId FK
+    datetime at
   }
-  RULE_RESULT ||--o| ALERT : triggers
-  ALERT {
-    string alert_id PK
-    string result_id FK
-    string hospital_id FK
-    datetime sent_at
-    string channel "app + LINE, both, always"
-    string status "hospital manages patient — no advice sent back"
-    datetime acknowledged_at
+  RULESET {
+    int id PK
+    string version UK
+    json params "thresholds"
+    string approvedBy "doctor or pharmacist"
+    string reason
   }
-  RULE_RESULT ||--o| ADVICE : generates
-  ADVICE {
-    string advice_id PK
-    string result_id FK
-    string advice_text "AI-generated Sick Day Rules etc."
-    boolean ai_generated
-    datetime delivered_at
-    string delivered_by FK
+  SETTING {
+    string key PK
+    string value "on/off per role, messages"
   }
-  SCREENING_RECORD ||--o| APPROVAL : signed_by
-  APPROVAL {
-    string approval_id PK
-    string screening_id FK
-    string approved_by FK
-    datetime approved_at
+  MANUAL {
+    int id PK
+    string title
+    bytes data "PDF"
+    string audience "pcu | clinician | admin"
   }
-  USER ||--o{ AUDIT_LOG : generates
-  AUDIT_LOG {
-    string log_id PK
-    string user_id FK
+  AUDITLOG {
+    int id PK
+    datetime at
+    int userId
     string action
-    string target_record
-    datetime timestamp
+    string entity
+    int entityId
+    string detail "IDs only, no names or lab values"
   }
-  HOSPITAL {
-    string hospital_id PK
-    string name
-    string line_group_id "the LINE group that receives alerts"
-  }
-  ALERT }o--|| HOSPITAL : sent_to
 ```
 
-## 3. Sequence diagram — binary alert model
+## 3. Sequence diagram: screen, alert, lock
 
 ```mermaid
 sequenceDiagram
-  actor Staff as Front-line staff
-  participant App as MALA Screening App
-  participant Rules as Rule engine (deterministic)
-  actor Doctor as Hospital team (LINE group + in-app)
+  actor Staff as รพ.สต. staff
+  participant App as MALA app (Next.js)
+  participant Rules as rules.ts (deterministic)
+  participant DB as PostgreSQL
+  actor Clin as Hospital clinician
+  actor Admin as Hospital admin
 
-  Staff->>App: Fill in the 13-item screening form
-  App->>Rules: Run dose check + risk score + Sick Day Rule flags
-  Rules-->>App: dose_appropriate, risk_score, sick_day_flag
-  App->>App: Log audit (rule engine ran)
-
-  alt dose check fails OR risk_score >= 2
-    App->>Doctor: Alert — in-app notification AND LINE group, both, at once
-    Note over Doctor: Hospital manages the patient directly.<br/>No advice is sent back for staff to carry out.
-    App-->>Staff: Notify: hospital alerted — role ends here
-  else neither triggers
-    App->>App: Generate advice (AI-assisted) from active Sick Day Rule flags
-    App-->>Staff: Show the advice
-    Staff->>App: Deliver advice to patient (no doctor, no waiting)
+  Staff->>App: Add patient (national ID)
+  App->>DB: Is this ID registered?
+  alt ID belongs to another unit
+    App-->>Staff: Popup: go to own unit or the hospital
+  else new ID
+    App->>DB: Save patient, status pending
   end
-
-  Staff->>App: Confirm / approve to close the case (e-signature)
-  App->>App: Log the approval + audit
-  App->>Doctor: Send screening data (every case) for hospital analysis
+  Staff->>App: Fill 13-item form
+  App->>DB: Read current criteria version
+  App->>Rules: evaluate(input, criteria, version)
+  Rules-->>App: dose check, risk score, alert kind, Sick Day reasons
+  App->>DB: Save screening + audit row
+  alt alert (dose first, then risk)
+    App-->>Clin: Appears in inbox tab "over-dose" or "general risk"
+    Clin->>App: Acknowledge, write follow-up
+    App->>DB: Save who and when + audit row
+  end
+  Staff->>App: Edit if needed, then confirm
+  App->>DB: Save confirmer, time, rule version (locked)
+  Staff->>App: Try to edit after confirm
+  App-->>Staff: Popup: locked, call the admin
+  Admin->>App: Amend field with reason
+  App->>DB: Save Amendment (old, new, reason) + audit row
+  Admin->>App: Verify patient, add HN
 ```
 
 ## 4. Architecture diagram
 
 ```mermaid
 flowchart TB
-  subgraph Client["Client side (Browser - computer/smartphone)"]
-    UI[Web App - MALA Screening]
+  subgraph Browser["Browser (computer or phone)"]
+    UI[Pages for pcu, clinician, admin]
   end
 
-  subgraph Server["Hosting: รพ.สต. server (฿0 budget)"]
-    API[Backend API]
-    Rules[Rule engine\ndeterministic - dose/eGFR, risk score, Sick Day flags]
-    AI[AI/LLM helper\nadvice text + patient-facing chatbot - NOT the risk decision]
-    DB[(Database - Patient, Screening, Rule result, Alert, Advice, Audit)]
+  subgraph Vercel["Vercel, region sin1 (free tier)"]
+    subgraph Next["Next.js 16 app (one modular monolith)"]
+      Pages[Server components and server actions]
+      Auth[session.ts\nhttpOnly cookie, hashed token, role checks]
+      Rules[rules.ts\nplain code, no AI]
+      Crit[criteria.ts / settings.ts\nversions and switches from DB]
+      Audit[audit.ts\nIDs only]
+    end
   end
 
-  subgraph Hospital["Referral hospital side"]
-    LineGrp[LINE group\nMALA alert - ~12 members]
-    HospitalUI[In-app notification\nhospital team]
-    HospDB[(Hospital DB - analysis data, every case)]
+  subgraph Neon["Neon PostgreSQL, Singapore (free tier)"]
+    Tables[(10 tables)]
+    Trig[Triggers: audit log append-only,\nlog changes made outside the app]
   end
 
-  UI -->|HTTPS| API
-  API --> Rules
-  Rules -->|risk_alert = true| API
-  API -->|"alert, simultaneous"| LineGrp
-  API -->|"alert, simultaneous"| HospitalUI
-  API -->|"no-alert: draft advice"| AI
-  AI -->|advice text| API
-  API --> DB
-  API -->|"send every case, always"| HospDB
-
-  API -.enforce.-> RBAC[RBAC / Auth Layer]
-  API -.write.-> AuditLog[Audit Log - CCA §26, kept ≥90 days]
+  UI -->|HTTPS| Pages
+  Pages --> Auth
+  Pages --> Rules
+  Pages --> Crit
+  Pages --> Audit
+  Pages -->|Prisma 7, pooled| Tables
+  Audit --> Tables
+  Tables --- Trig
 ```
 
-**Note:** the rule engine box is deliberately drawn separate from the AI/LLM box — the alert decision itself is plain deterministic code per `../../intent.md`'s "Risk calculation approach," never a model call. AI is scoped to advice-text generation and the patient-facing chatbot only (chatbot itself is still stretch/out of MVP, see `.docs/04-build/scope-lock.md`). Not shown: AdminDashboard, HOSxP integration — stretch, out of MVP. See `.docs/01-requirements/backlog.md` for the Stretch section.
-
-## Note
-This version is based on `thresholds/` (DOC-02), arrived Sep 8, 2026. One thing is still known to be unreconciled inside that same source material — the outline spreadsheet's point-tally scoring vs. the demo deck's single 0–100 Risk Score — see the open questions in `../../intent.md`. Do not treat this as a final BUILD spec until that closes, and until the clinical criteria are formally endorsed (the outline itself is titled "draft").
+The same app runs on the hospital's own server with any PostgreSQL (see
+`../final/deployment.md`). Not shown because not built: LINE alerts, AI advice, chatbot,
+HIS / HOSxP link.

@@ -59,6 +59,8 @@ the hospital's real clinical criteria — not an AI/LLM judgment call. Full cont
 | Sprint 0 status / setup checklist | `.docs/04-build/sprint-0.md` |
 | Team roles | `Roles.txt` |
 | Design (feature list, user journey, prototype, diagrams) | `.docs/02-design/` |
+| Final evidence index (case study, AI logic, comparison table, role statements) | `.docs/final/README.md` |
+| Test sessions, issue log, test run logs | `test/` |
 
 ## Working style
 

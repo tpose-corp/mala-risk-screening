@@ -43,3 +43,19 @@ This document acts as a **traceability matrix**: every rule in `rule.md` must tr
 3. **New, Sep 8, 2026:** legal basis/agreement for sending patient data from รพ.สต. to the referral hospital for analysis (PBI-15) — not checked at all yet
 
 Linked to: `../../rule.md` (the original rules, repo root as of Sprint 0/W6), `../01-requirements/backlog.md` (the full backlog), `../00-proposal/proposal.md`
+
+## Status in v2 (Nov 18, 2026)
+
+| Rule | Status | Where |
+|---|---|---|
+| RBAC, least privilege | Built: 3 roles; pcu sees own unit only; clinician read-only, no export | `app/src/lib/session.ts` |
+| Data minimisation | National ID added at the hospital's request (S01 F-02) to stop duplicate patients; shown masked on the screening page | `app/src/lib/format.ts` (`maskCardId`) |
+| Logs keep IDs only, append-only, at least 90 days | Built; DB triggers block UPDATE, DELETE and TRUNCATE | `app/prisma/migrations/*audit_triggers`, `app/README.md` CCA §26 table |
+| Log account and permission changes | Built: `admin.user.*`, `admin.settings.update`, `admin.criteria.update` | `app/src/lib/audit-text.ts` |
+| Confirm records who, when, which rule version | Built | `app/src/app/screenings/[id]/confirm/` |
+| Edit after signing creates a traceable version | Built: `Amendment` table with old value, new value, reason, who, when | PBI-14 |
+| No secrets or real data in git | Checked across all branches and history, Nov 18, 2026 | `.docs/final/README.md` "Secret check" |
+| Consent notice (PBI-13) | Still open | |
+| DPO named | Still open | `.docs/00-proposal/company-charter.md` |
+| Legal basis for sending data to the hospital (PBI-15) | Still open; in v2 the hospital runs the system itself, which the hospital should confirm covers this | |
+

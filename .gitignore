@@ -19,3 +19,5 @@ build/
 *.log
 
 # Not ready to commit / internal-only
+.vercel
+.env*

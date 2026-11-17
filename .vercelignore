@@ -1,0 +1,11 @@
+# Uploaded by `vercel` from the repo root (Root Directory = app). Never send secrets or local files.
+**/.env
+**/.env.*
+!**/.env.example
+**/*.db
+**/*.db-journal
+**/node_modules
+**/.next
+app/src/generated
+.vercel
+thresholds
