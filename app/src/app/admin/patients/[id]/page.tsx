@@ -7,10 +7,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Topbar } from "@/components/topbar";
-import { ConfirmSubmit } from "@/components/ui/confirm-submit";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { ageFromThaiDob, cardIdChecksumOk, formatCardId, thaiDate, thaiDateTime } from "@/lib/format";
+import { AmendScreeningForm } from "./amend-form";
 import { PatientEditCard } from "./patient-edit";
 import { ActiveToggle, FoldRows, Tabs, Timeline, VerifyBox, type TimelineItem } from "./patient-panels";
 
@@ -56,12 +56,12 @@ export default async function AdminPatient({ params, searchParams }: PageProps<"
   const errCode = typeof sp.err === "string" ? sp.err : "";
   const editErr = EDIT_ERRORS.includes(errCode) ? MSG[errCode] : null;
   const verifyErr = errCode === "vhn" ? MSG.hn : errCode === "vhndup" ? MSG.hndup : null;
-  const err = errCode && !editErr && !verifyErr ? MSG[errCode] : null;
+  const amendErr = Number(sp.s) > 0 && ["reason", "values"].includes(errCode);
+  const err = errCode && !editErr && !verifyErr && !amendErr ? MSG[errCode] : null;
   const openScreening = Number(sp.s);
   // where "กลับ" goes: the exact list the admin came from (tab, search, page), else the full list
   const backTo = safeBack(sp.back, "/admin/patients") || "/admin/patients";
   const keep = `back=${encodeURIComponent(backTo)}`;
-  const backField = <input type="hidden" name="back" value={backTo} />;
 
   const status = !p.active ? <span className="ui-badge muted">ปิดใช้งาน</span> : p.status === "pending" ? <span className="ui-badge warn">รอยืนยันตัวตน</span> : <span className="ui-badge ok">ยืนยันแล้ว</span>;
   const whenOf = new Map(p.screenings.map((s) => [s.id, thaiDate(s.createdAt)]));
@@ -87,7 +87,7 @@ export default async function AdminPatient({ params, searchParams }: PageProps<"
         <td>
           <div className="pa-row-btns">
             <Link href={`/hospital/cases/${s.id}`} className="ui-btn secondary sm">ดูเคส</Link>
-            <Link href={`/admin/patients/${p.id}?s=${s.id}&${keep}#amend`} className="ui-btn secondary sm">แก้ไขผล</Link>
+            <Link href={`/admin/patients/${p.id}?s=${s.id}&${keep}`} scroll={false} className="ui-btn secondary sm">แก้ไขผล</Link>
           </div>
         </td>
       </tr>
@@ -172,37 +172,16 @@ export default async function AdminPatient({ params, searchParams }: PageProps<"
         <div className="pa-main">
 
             {amending && (
-              <form id="amend" action={amendScreening.bind(null, p.id, amending.id)} className="ui-card">
-                {backField}
-                <div className="ui-card-head">
-                  <div className="ui-card-title">แก้ไขผลคัดกรองวันที่ {thaiDateTime(amending.createdAt)}<span className="ui-card-count">{amending.facility}</span></div>
-                  <Link href={`/admin/patients/${p.id}?${keep}`} className="ui-link-btn">ยกเลิก</Link>
-                </div>
-                <div className="pa-card-body pa-form">
-                  <p className="pa-hint">ระบบจะคำนวณผลใหม่ด้วยเกณฑ์เวอร์ชันเดิม ({amending.ruleVersion}) และเก็บค่าเดิมไว้ในประวัติการแก้ไข</p>
-                  <div className="pa-grid4">
-                    <div><label className="lbl" htmlFor="weightKg">น้ำหนัก (กก.)</label><input className="fld" id="weightKg" name="weightKg" type="number" step="0.1" defaultValue={amending.weightKg} required /></div>
-                    <div><label className="lbl" htmlFor="heightCm">ส่วนสูง (ซม.)</label><input className="fld" id="heightCm" name="heightCm" type="number" step="0.1" defaultValue={amending.heightCm} required /></div>
-                    <div><label className="lbl" htmlFor="egfr">eGFR</label><input className="fld" id="egfr" name="egfr" type="number" step="0.1" defaultValue={amending.egfr} required /></div>
-                    <div><label className="lbl" htmlFor="doseMgDay">ขนาดยา (มก./วัน)</label><input className="fld" id="doseMgDay" name="doseMgDay" type="number" step="250" defaultValue={amending.doseMgDay} required /></div>
-                    {([["drinksAlcohol", "ดื่มแอลกอฮอล์"], ["bingeDrinking", "ดื่มหนักในครั้งเดียว"], ["regularHeavyDrinking", "ดื่มหนักต่อเนื่อง"], ["vomiting", "อาเจียน/ท้องเสีย"], ["lowIntake", "ทานได้น้อยลง"], ["nsaid", "ยาแก้ปวด/ยาชุด"], ["herbal", "สมุนไพร/อาหารเสริม"]] as const).map(([k, l]) => (
-                      <div key={k}>
-                        <label className="lbl" htmlFor={k}>{l}</label>
-                        <select className="fld" id={k} name={k} defaultValue={amending[k] ? "yes" : "no"}><option value="no">ไม่ใช่</option><option value="yes">ใช่</option></select>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="pa-two">
-                    <div><label className="lbl" htmlFor="nsaidNote">ชื่อยาที่ระบุ</label><input className="fld" id="nsaidNote" name="nsaidNote" defaultValue={amending.nsaidNote ?? ""} /></div>
-                    <div><label className="lbl" htmlFor="herbalNote">สมุนไพรที่ระบุ</label><input className="fld" id="herbalNote" name="herbalNote" defaultValue={amending.herbalNote ?? ""} /></div>
-                  </div>
-                  <div><label className="lbl" htmlFor="reason2">เหตุผลที่แก้ไข *</label><input className="fld" id="reason2" name="reason" required placeholder="เช่น รพ.สต. โทรแจ้งว่ากรอก eGFR ผิด" /></div>
-                  <div className="pa-inline">
-                    <ConfirmSubmit className="ui-btn primary" label="บันทึกการแก้ไขผลคัดกรอง" title="ตรวจสอบการแก้ไขผลคัดกรอง" note={`ระบบจะคำนวณผลใหม่ด้วยเกณฑ์ ${amending.ruleVersion} และเก็บค่าเดิมไว้ในประวัติการแก้ไข`} />
-                    <Link href={`/admin/patients/${p.id}?${keep}`} className="ui-btn secondary">ยกเลิก</Link>
-                  </div>
-                </div>
-              </form>
+              <AmendScreeningForm key={amending.id}
+                screening={{
+                  weightKg: amending.weightKg, heightCm: amending.heightCm, egfr: amending.egfr, doseMgDay: amending.doseMgDay,
+                  drinksAlcohol: amending.drinksAlcohol, bingeDrinking: amending.bingeDrinking, regularHeavyDrinking: amending.regularHeavyDrinking,
+                  vomiting: amending.vomiting, lowIntake: amending.lowIntake, nsaid: amending.nsaid, herbal: amending.herbal,
+                  nsaidNote: amending.nsaidNote, herbalNote: amending.herbalNote,
+                }}
+                title={`แก้ไขผลคัดกรองวันที่ ${thaiDateTime(amending.createdAt)}`} facility={amending.facility} ruleVersion={amending.ruleVersion}
+                action={amendScreening.bind(null, p.id, amending.id)} backTo={backTo} cancelHref={`/admin/patients/${p.id}?${keep}`}
+                serverError={["reason", "values"].includes(errCode) ? MSG[errCode] : undefined} />
             )}
 
             <Tabs tabs={[

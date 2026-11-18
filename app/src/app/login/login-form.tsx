@@ -32,7 +32,6 @@ export function LoginForm({ notice }: { notice?: string }) {
       <div className="lg-card-head">
         <span className="lg-hello">ยินดีต้อนรับ</span>
         <h2>เข้าสู่ระบบ</h2>
-        <p>ใช้บัญชีผู้ใช้ที่โรงพยาบาลออกให้</p>
       </div>
 
       <div className="lg-field">
