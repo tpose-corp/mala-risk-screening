@@ -38,6 +38,9 @@ async function save(fd: FormData) {
   redirect("/admin/criteria?ok=1");
 }
 
+// Labels are 1 or 2 lines long; giving every label 2 lines keeps the boxes in one row level.
+const LABEL_2_LINES = { minHeight: "2.9em", display: "flex", alignItems: "flex-end" } as const;
+
 export default async function CriteriaPage({ searchParams }: PageProps<"/admin/criteria">) {
   await requireAdmin();
   const sp = await searchParams;
@@ -67,7 +70,7 @@ export default async function CriteriaPage({ searchParams }: PageProps<"/admin/c
               <div className="form-grid">
                 {KEYS.filter((k) => PARAM_INFO[k].part === part).map((k) => (
                   <div key={k}>
-                    <label className="lbl" htmlFor={k}>{PARAM_INFO[k].label} ({PARAM_INFO[k].unit})</label>
+                    <label className="lbl" htmlFor={k} style={LABEL_2_LINES}>{PARAM_INFO[k].label} ({PARAM_INFO[k].unit})</label>
                     <input className="fld" id={k} name={k} type="number" step="any" min={0} required defaultValue={cur.params[k]} />
                     <div className="note">ค่าเริ่มต้นตามเอกสาร รพ. {DEFAULT_PARAMS[k]}</div>
                   </div>

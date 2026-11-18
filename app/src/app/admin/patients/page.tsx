@@ -10,7 +10,11 @@ import { SegTabs } from "@/components/ui/seg-tabs";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { ageFromThaiDob, formatCardId, thaiDateTime } from "@/lib/format";
+import { ageFromThaiDob, formatCardId, thaiDate, thaiDateTime } from "@/lib/format";
+
+// "14:05 น." (the date goes on its own line so the table stays narrow)
+const timeOf = (d: Date) => thaiDateTime(d).slice(thaiDate(d).length).trim();
+const MUTED = { color: "var(--muted)" } as const;
 import { PER_PAGE_CHOICES, num, pageInfo } from "@/lib/paging";
 import { requireAdmin } from "@/lib/session";
 
@@ -94,16 +98,16 @@ export default async function AdminPatients({ searchParams }: PageProps<"/admin/
                   const last = p.screenings[0];
                   return (
                     <tr key={p.id} className={p.active ? "" : "off"}>
-                      <td><b>{p.name}</b><span className="sub-line">{p.sex} {ageFromThaiDob(p.dob)} ปี</span></td>
+                      <td style={{ whiteSpace: "nowrap" }}><b>{p.name}</b><span className="sub-line">{p.sex} {ageFromThaiDob(p.dob)} ปี</span></td>
                       <td className="mono" style={{ whiteSpace: "nowrap" }}>{formatCardId(p.cardId)}</td>
-                      <td className="mono">{p.hn ?? "ยังไม่มี"}</td>
+                      <td className="mono" style={{ whiteSpace: "nowrap" }}>{p.hn ?? <span style={MUTED}>ยังไม่มี</span>}</td>
                       <td style={{ whiteSpace: "nowrap" }}>{p.facility ?? "ยังไม่มี"}</td>
                       <td>
                         {!p.active ? <span className="ui-badge muted">ปิดใช้งาน</span> : p.status === "pending" ? <span className="ui-badge warn">รอยืนยันตัวตน</span> : <span className="ui-badge ok">ยืนยันแล้ว</span>}
                       </td>
-                      <td style={{ whiteSpace: "nowrap" }}>{thaiDateTime(p.registeredAt)}</td>
+                      <td style={{ whiteSpace: "nowrap" }}>{thaiDate(p.registeredAt)}<span className="sub-line">{timeOf(p.registeredAt)}</span></td>
                       <td style={{ whiteSpace: "nowrap" }}>
-                        {last ? thaiDateTime(last.createdAt) : "ยังไม่เคย"}
+                        {last ? <>{thaiDate(last.createdAt)}<span className="sub-line">{timeOf(last.createdAt)}</span></> : <span style={MUTED}>ยังไม่เคย</span>}
                         {last?.isAlert && <span className="sub-line"><span className={`ui-badge ${last.alertKind === "dose" ? "hi" : "warn"}`}>{last.alertKind === "dose" ? "ใช้ยาเกินขนาด" : "เสี่ยงทั่วไป"}</span></span>}
                         {p._count.screenings > 1 && <span className="sub-line">รวม {p._count.screenings} ครั้ง</span>}
                       </td>

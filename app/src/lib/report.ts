@@ -42,6 +42,9 @@ export function reportRow(s: Row): string[] {
 
 // CSV that Excel opens with Thai intact (UTF-8 with BOM).
 export function toCsv(rows: string[][]) {
-  const cell = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  // CSV injection guard (OWASP): text typed by users that starts with = + - @ (or a tab / CR) would
+  // run as a formula in Excel. A leading ' makes Excel show it as plain text. Plain numbers stay as-is.
+  const safe = (v: string) => (/^[=+\-@\t\r]/.test(v) && !/^-?\d+(\.\d+)?$/.test(v) ? `'${v}` : v);
+  const cell = (raw: string) => { const v = safe(raw); return /[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
   return "﻿" + rows.map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
 }

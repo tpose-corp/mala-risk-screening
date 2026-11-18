@@ -9,8 +9,9 @@ import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { ageFromThaiDob, thaiDateTime } from "@/lib/format";
 import { alertReasons } from "@/lib/reasons";
-import { Card, PageHead, PagerBar } from "@/components/ui/card";
-import { FilterGroup, FilterPanel } from "@/components/ui/filter-panel";
+import { PageHead, PagerBar } from "@/components/ui/card";
+import { FilterGroup } from "@/components/ui/filter-panel";
+import { CompactSearch } from "@/components/ui/compact-search";
 import { hasFilters, queryFor, readFilters, whereFor } from "@/lib/case-filters";
 import { PER_PAGE_CHOICES, PERIODS, num, pageInfo } from "@/lib/paging";
 import { PerPage } from "@/components/ui/per-page";
@@ -19,7 +20,8 @@ import { withBack } from "@/lib/back-link";
 import { groupWaiting } from "@/lib/priority";
 import { waitText } from "@/lib/wait";
 import { requireHospital } from "@/lib/session";
-import { acknowledgeAlert } from "./actions";
+import { ackSummary } from "@/lib/ack-summary";
+import { AcknowledgeButton } from "./acknowledge-button";
 
 // "วันนี้ 08:40" for today, the full Thai date and time otherwise.
 function whenText(d: Date) {
@@ -53,10 +55,11 @@ export default async function AlertInbox({ searchParams }: PageProps<"/hospital"
   const perQ: Record<string, number> = per === 20 ? {} : { per };
   const alerts = done
     ? await db.screening.findMany({ where: doneWhere, include: ROW_INCLUDE, orderBy: { acknowledgedAt: "desc" }, skip: pg.skip, take: pg.take })
-    : await db.screening.findMany({ where: { isAlert: true, alertKind: kind, acknowledgedAt: null }, include: ROW_INCLUDE, orderBy: { alertRaisedAt: "asc" }, take: WAITING_LIMIT });
-  const facilities = done
-    ? (await db.facility.findMany({ select: { name: true }, orderBy: { name: "asc" } })).map((x) => x.name)
-    : [];
+    : await db.screening.findMany({
+        where: whereFor({ ...f, result: "all", period: "all" }, "acknowledgedAt", { isAlert: true, alertKind: kind, acknowledgedAt: null }),
+        include: ROW_INCLUDE, orderBy: { alertRaisedAt: "asc" }, take: WAITING_LIMIT,
+      });
+  const facilities = (await db.facility.findMany({ select: { name: true }, orderBy: { name: "asc" } })).map((x) => x.name);
   const pageHref = (page: number) => `/hospital${queryFor({ ...f, result: "all" }, { show: "done", kind, ...perQ, page })}`;
   // Summary numbers for the top of the page.
   const oldest = await db.screening.findFirst({
@@ -71,7 +74,7 @@ export default async function AlertInbox({ searchParams }: PageProps<"/hospital"
   const tab = (k: "dose" | "risk", show: boolean) => `/hospital?kind=${k}${show ? "&show=done" : ""}${show && per !== 20 ? `&per=${per}` : ""}`;
   // this exact view, so "กลับ" on a case or patient page returns here
   const here = done ? pageHref(pg.page) : tab(kind, false);
-  const activeFilters = [f.fac, f.period !== "all"].filter(Boolean).length;
+  const activeFilters = [f.fac, done && f.period !== "all"].filter(Boolean).length;
 
   return (
     <>
@@ -90,54 +93,55 @@ export default async function AlertInbox({ searchParams }: PageProps<"/hospital"
           }
         />
 
-        <nav className="ui-kind-tabs" aria-label="ประเภทการแจ้งเตือน">
-          <Link href={tab("dose", done)} scroll={false} className={`dose${kind === "dose" ? " on" : ""}`}>
-            <span className="t">ใช้ยาเกินขนาด</span>
-            <span className="d">ได้ยาเกินขนาดตาม eGFR หรือมีภาวะห้ามใช้ยา แพทย์ควรพิจารณาเป็นลำดับแรก</span>
-            {waitingDose > 0 && <span className="n">{waitingDose} รอรับเรื่อง</span>}
-          </Link>
-          <Link href={tab("risk", done)} scroll={false} className={`risk${kind === "risk" ? " on" : ""}`}>
-            <span className="t">เกณฑ์เสี่ยงทั่วไป</span>
-            <span className="d">คะแนนความเสี่ยง MALA ถึงเกณฑ์ แต่ขนาดยายังเหมาะสม</span>
-            {waitingRisk > 0 && <span className="n">{waitingRisk} รอรับเรื่อง</span>}
-          </Link>
-        </nav>
-
-        <div className="ui-stats">
-          <div className={`ui-stat${waiting ? " hi" : ""}`}><div className="label">รอรับเรื่อง</div><div className="value">{num(waiting)} <small>เคส</small></div></div>
-          <div className="ui-stat"><div className="label">รอนานที่สุด</div><div className="value small">{oldest?.alertRaisedAt ? waitText(oldest.alertRaisedAt) : "ไม่มี"}</div></div>
-          <div className="ui-stat"><div className="label">รับเรื่องแล้ววันนี้</div><div className="value">{num(ackToday)} <small>เคส</small></div></div>
-        </div>
-
-        {done && (
-          <FilterPanel action="/hospital" hidden={{ show: "done", kind, ...(per !== 20 ? { per: String(per) } : {}) }} search={{ name: "q", value: f.q, placeholder: "ค้นหาชื่อหรือ HN" }}
-            activeCount={activeFilters} clearHref={tab(kind, true)}>
-            <FilterGroup label="หน่วยบริการที่คัดกรอง">
-              <select className="ui-select" name="fac" defaultValue={f.fac}>
-                <option value="">ทุกหน่วยบริการ</option>
-                {facilities.map((x) => <option key={x} value={x}>{x}</option>)}
-              </select>
-            </FilterGroup>
-            <FilterGroup label="ช่วงเวลาที่รับเรื่อง">
-              <select className="ui-select" name="period" defaultValue={f.period}>
-                {PERIODS.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-              </select>
-            </FilterGroup>
-          </FilterPanel>
-        )}
-
-        {!done && waiting > alerts.length && (
+        {!done && !hasFilters(f) && waiting > alerts.length && (
           <div className="flash bad">
             แสดง {num(alerts.length)} เคสที่รอนานที่สุด ยังมีเคสรออีก {num(waiting - alerts.length)} เคส รับเรื่องเคสด้านบนแล้วเคสที่เหลือจะขึ้นมาเอง
           </div>
         )}
 
-        <Card
-          title={done ? "เคสที่รับเรื่องแล้ว" : "เคสที่รอรับเรื่อง"}
-          count={done ? `${num(pg.total)} เคส` : `${num(alerts.length)} เคส`}
-          actions={done ? <PerPage value={per} unit="เคส" /> : <span className="ui-card-count">อัปเดตเองทุก 10 วินาที</span>}
-          footer={done ? <PagerBar pg={pg} href={pageHref} unit="เคส" /> : undefined}
-        >
+        {/* One card: pick the alert type (tabs), see the two numbers (chips), then the cases. */}
+        <section className="ui-card inbox-card">
+          <div className="kind-switch" role="tablist" aria-label="เลือกประเภทการแจ้งเตือน">
+            {([
+              { k: "dose", t: "ใช้ยาเกินขนาด", d: "ขนาดยาเกินเกณฑ์ eGFR หรือห้ามใช้ยา ควรพิจารณาก่อน", n: waitingDose },
+              { k: "risk", t: "เกณฑ์เสี่ยงทั่วไป", d: "คะแนนความเสี่ยง MALA ถึงเกณฑ์ แต่ขนาดยายังเหมาะสม", n: waitingRisk },
+            ] as const).map((x) => (
+              <Link key={x.k} href={tab(x.k, done)} scroll={false} role="tab" aria-selected={kind === x.k} className={`${x.k}${kind === x.k ? " on" : ""}`}>
+                <span className="radio" aria-hidden="true" />
+                <span className="body">
+                  <span className="t">{x.t}</span>
+                  <span className="d">{x.d}</span>
+                </span>
+                <span className={`n${x.n ? "" : " zero"}`}>{x.n ? `${num(x.n)} รอรับเรื่อง` : "ไม่มีเคสรอ"}</span>
+              </Link>
+            ))}
+          </div>
+
+          <div className="inbox-meta">
+            <span className="title">{done ? "เคสที่รับเรื่องแล้ว" : "เคสที่รอรับเรื่อง"} <b>{num(done ? pg.total : alerts.length)} เคส</b></span>
+            <span className={`chip${oldest ? " hi" : ""}`}>⏱ รอนานที่สุด <b>{oldest?.alertRaisedAt ? waitText(oldest.alertRaisedAt) : "ไม่มีเคสรอ"}</b></span>
+            <span className="chip">✓ รับเรื่องแล้ววันนี้ <b>{num(ackToday)} เคส</b> <small>(ทั้ง 2 ประเภท)</small></span>
+            <span className="end">
+              <CompactSearch action="/hospital" hidden={{ kind, ...(done ? { show: "done" } : {}), ...(done && per !== 20 ? { per: String(per) } : {}) }}
+                name="q" value={f.q} placeholder="ชื่อหรือ HN" activeCount={activeFilters} clearHref={tab(kind, done)}>
+                <FilterGroup label="หน่วยบริการที่คัดกรอง">
+                  <select className="ui-select" name="fac" defaultValue={f.fac}>
+                    <option value="">ทุกหน่วยบริการ</option>
+                    {facilities.map((x) => <option key={x} value={x}>{x}</option>)}
+                  </select>
+                </FilterGroup>
+                {done && (
+                  <FilterGroup label="ช่วงเวลาที่รับเรื่อง">
+                    <select className="ui-select" name="period" defaultValue={f.period}>
+                      {PERIODS.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                    </select>
+                  </FilterGroup>
+                )}
+              </CompactSearch>
+              {done ? <PerPage value={per} unit="เคส" /> : <span className="auto">อัปเดตเองทุก 10 วินาที</span>}
+            </span>
+          </div>
+
           <div className="ui-table-wrap sticky-head" key={here}>
             <table className="ui-table">
               <thead>
@@ -151,20 +155,21 @@ export default async function AlertInbox({ searchParams }: PageProps<"/hospital"
               </thead>
               <tbody className="ui-fade-rows">
                 {done
-                  ? alerts.map((s) => <AlertRow key={s.id} s={s} from={here} />)
+                  ? alerts.map((s) => <AlertRow key={s.id} s={s} from={here} me={user.displayName} />)
                   : groupWaiting(alerts).map((g) => (
                       <Fragment key={g.group}>
                         <tr className="grp"><td colSpan={5}>{g.label} <span>{g.items.length} เคส</span></td></tr>
-                        {g.items.map((s) => <AlertRow key={s.id} s={s} from={here} />)}
+                        {g.items.map((s) => <AlertRow key={s.id} s={s} from={here} me={user.displayName} />)}
                       </Fragment>
                     ))}
                 {alerts.length === 0 && (
-                  <tr><td colSpan={5} className="ui-empty">{done ? (hasFilters(f) ? "ไม่พบเคสตามที่ค้นหา" : "ยังไม่มีเคสที่รับเรื่อง") : "ไม่มีเคสที่รอรับเรื่อง"}</td></tr>
+                  <tr><td colSpan={5} className="ui-empty">{done ? (hasFilters(f) ? "ไม่พบเคสตามที่ค้นหา" : "ยังไม่มีเคสที่รับเรื่อง") : (hasFilters(f) ? "ไม่พบเคสตามที่ค้นหา" : "ไม่มีเคสที่รอรับเรื่อง")}</td></tr>
                 )}
               </tbody>
             </table>
           </div>
-        </Card>
+          {done && <PagerBar pg={pg} href={pageHref} unit="เคส" />}
+        </section>
       </main>
     </>
   );
@@ -182,7 +187,7 @@ const WAITING_LIMIT = 200;
 
 type Alert = Prisma.ScreeningGetPayload<{ include: typeof ROW_INCLUDE }>;
 
-function AlertRow({ s, from }: { s: Alert; from: string }) {
+function AlertRow({ s, from, me }: { s: Alert; from: string; me: string }) {
   return (
     <tr>
       <td style={{ whiteSpace: "nowrap" }}>
@@ -212,9 +217,7 @@ function AlertRow({ s, from }: { s: Alert; from: string }) {
           {s.acknowledgedAt ? (
             <span className="sub-line" style={{ textAlign: "right" }}>{s.acknowledgedBy?.displayName}<br />{thaiDateTime(s.acknowledgedAt)}</span>
           ) : (
-            <form action={acknowledgeAlert.bind(null, s.id)}>
-              <button className="ui-btn solid-danger sm" type="submit">รับเรื่อง</button>
-            </form>
+            <AcknowledgeButton id={s.id} me={me} summary={ackSummary(s)} className="ui-btn solid-danger sm" />
           )}
           <Link href={withBack(`/hospital/cases/${s.id}`, from)} className="ui-btn secondary sm">ดูเคส</Link>
         </div>

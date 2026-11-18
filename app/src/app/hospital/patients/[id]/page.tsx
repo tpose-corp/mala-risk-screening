@@ -1,6 +1,7 @@
 // /hospital/patients/[id] — one patient's whole screening history, for the referral-hospital doctor:
 // who they are, how the key values changed since the first screening, and every screening.
 import Link from "next/link";
+import { Fragment } from "react";
 import { notFound } from "next/navigation";
 import { Topbar } from "@/components/topbar";
 import { Card, PageHead } from "@/components/ui/card";
@@ -17,7 +18,7 @@ export default async function PatientHistoryPage({ params, searchParams }: PageP
   const patient = Number.isInteger(id)
     ? await db.patient.findUnique({
         where: { id },
-        include: { screenings: { orderBy: { createdAt: "desc" }, include: { screener: true } } },
+        include: { screenings: { orderBy: { createdAt: "desc" }, include: { screener: true, followUpBy: true, followUpNotes: { include: { by: true }, orderBy: { at: "asc" } } } } },
       })
     : null;
   if (!patient) notFound();
@@ -99,8 +100,14 @@ export default async function PatientHistoryPage({ params, searchParams }: PageP
                 <tr><th>วันที่คัดกรอง</th><th>หน่วยที่ตรวจ</th><th className="num">eGFR</th><th className="num">ขนาดยา</th><th className="num">BMI</th><th className="num">คะแนน</th><th>ผล</th><th>สถานะ</th><th /></tr>
               </thead>
               <tbody>
-                {list.map((x) => (
-                  <tr key={x.id}>
+                {list.map((x) => {
+                  // doctor / nurse notes, attached under the screening they belong to (oldest first)
+                  const notes = x.followUpNotes.length
+                    ? x.followUpNotes.map((n) => ({ id: n.id, at: n.at, by: n.by.displayName, note: n.note }))
+                    : x.followUpNote && x.followUpAt ? [{ id: 0, at: x.followUpAt, by: x.followUpBy?.displayName ?? "", note: x.followUpNote }] : [];
+                  return (
+                  <Fragment key={x.id}>
+                  <tr className={notes.length ? "has-notes" : undefined}>
                     <td style={{ whiteSpace: "nowrap" }}>{thaiDateTime(x.createdAt)}<span className="sub-line">โดย {x.screener.displayName}</span></td>
                     <td>{x.facility}</td>
                     <td className="num">{x.egfr}</td>
@@ -115,7 +122,21 @@ export default async function PatientHistoryPage({ params, searchParams }: PageP
                     </td>
                     <td style={{ textAlign: "right" }}><Link href={withBack(`/hospital/cases/${x.id}`, here)} className="ui-btn secondary sm">ดูเคส</Link></td>
                   </tr>
-                ))}
+                  {notes.length > 0 && (
+                    <tr className="note-row">
+                      <td colSpan={9}>
+                        <div className="note-row-h">การดำเนินการของ รพ. ({notes.length})</div>
+                        <ul>
+                          {notes.map((n, i) => (
+                            <li key={n.id || i}><span className="t">{thaiDateTime(n.at)} {n.by}</span>{n.note}</li>
+                          ))}
+                        </ul>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
+                  );
+                })}
                 {list.length === 0 && <tr><td colSpan={9} className="ui-empty">ยังไม่เคยคัดกรอง</td></tr>}
               </tbody>
             </table>

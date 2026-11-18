@@ -34,7 +34,7 @@ export function UserForm({ facilities, user }: { facilities: string[]; user?: U 
   const [state, action, pending] = useActionState(user ? updateUser.bind(null, user.id) : createUser, undefined);
   const [role, setRole] = useState(user?.role ?? "pcu");
   return (
-    <form onSubmit={submitWithoutReset(action)} className="card pad" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <form method="post" onSubmit={submitWithoutReset(action)} className="card pad" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div className="sec-title" style={{ margin: 0 }}>{user ? `แก้ไขบัญชี ${user.username}` : "สร้างบัญชีใหม่"}</div>
       <div className="form-grid">
         <div>

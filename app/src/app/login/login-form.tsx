@@ -7,13 +7,13 @@ import { login } from "@/app/actions";
 import { submitWithoutReset } from "@/lib/submit";
 
 // Synthetic demo accounts (prisma/seed.ts). Clicking one fills the form, handy for demos.
+// The admin account is NOT listed here (18 Nov 2026): the admin logs in by typing.
 const DEMO = [
-  { u: "admin", label: "ผู้ดูแลระบบ รพ." },
   { u: "doctor", label: "แพทย์ / พยาบาล" },
   { u: "somsri", label: "เจ้าหน้าที่ รพ.สต." },
 ];
 
-export function LoginForm() {
+export function LoginForm({ notice }: { notice?: string }) {
   // state = whatever `login` returned last time (e.g. an error); pending = true while submitting.
   const [state, action, pending] = useActionState(login, undefined);
   const [showPw, setShowPw] = useState(false);
@@ -28,7 +28,7 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={submitWithoutReset(action)} className="lg-card">
+    <form method="post" onSubmit={submitWithoutReset(action)} className="lg-card">
       <div className="lg-card-head">
         <span className="lg-hello">ยินดีต้อนรับ</span>
         <h2>เข้าสู่ระบบ</h2>
@@ -61,6 +61,7 @@ export function LoginForm() {
       </div>
 
       {/* key = the error object: each new error remounts this box and replays the shake */}
+      {notice && !state?.error && <div className="lg-reason" role="status">{notice}</div>}
       {state?.error && (
         <div className="lg-error" role="alert" key={JSON.stringify(state) + String(pending)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></svg>

@@ -17,13 +17,16 @@ import { db } from "./db";
 import { getSettings } from "./settings";
 
 const COOKIE = "mala_session";
-const SESSION_HOURS = 8; // one working shift
+const SESSION_HOURS = 8; // one working shift: the longest a login can last
+export const IDLE_MINUTES = 30; // logged out after this long without any activity (OWASP A07)
 
 const hash = (token: string) => createHash("sha256").update(token).digest("hex");
 
 export async function createSession(userId: number) {
   const token = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000);
+  const hardEnd = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000);
+  // expiresAt = the idle deadline; keepAlive() moves it forward while the user is active
+  const expiresAt = new Date(Date.now() + IDLE_MINUTES * 60_000);
   await db.session.create({ data: { id: hash(token), userId, expiresAt } });
 
   const cookieStore = await cookies();
@@ -32,8 +35,20 @@ export async function createSession(userId: number) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    expires: expiresAt,
+    expires: hardEnd,
   });
+}
+
+// Pushes the idle deadline forward (never past the 8-hour limit). False = already expired.
+export async function touchSession(): Promise<boolean> {
+  const token = (await cookies()).get(COOKIE)?.value;
+  if (!token) return false;
+  const s = await db.session.findUnique({ where: { id: hash(token) }, select: { id: true, createdAt: true, expiresAt: true } });
+  if (!s || s.expiresAt < new Date()) return false;
+  const hardEnd = s.createdAt.getTime() + SESSION_HOURS * 60 * 60 * 1000;
+  const next = Math.min(hardEnd, Date.now() + IDLE_MINUTES * 60_000);
+  await db.session.update({ where: { id: s.id }, data: { expiresAt: new Date(next) } });
+  return next > Date.now();
 }
 
 export async function deleteSession() {
@@ -64,11 +79,24 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     where: { id: hash(token) },
     include: { user: true },
   });
-  if (!session || session.expiresAt < new Date() || !session.user.active) return null;
+  const hardEnd = session ? session.createdAt.getTime() + SESSION_HOURS * 60 * 60 * 1000 : 0;
+  // idle deadline passed, 8-hour limit passed, or account switched off: not logged in
+  if (!session || session.expiresAt < new Date() || hardEnd < Date.now() || !session.user.active) return null;
 
   const { id, username, displayName, role, facility, mustChangePassword } = session.user;
   return { id, username, displayName, role: role as Role, facility, mustChangePassword };
 });
+
+// Why there is no valid session although the browser still has one: idle too long, or the
+// 8-hour limit. Used to tell the user on the login page (?reason=).
+async function endedReason(): Promise<string> {
+  const token = (await cookies()).get(COOKIE)?.value;
+  if (!token) return "";
+  const s = await db.session.findUnique({ where: { id: hash(token) }, select: { createdAt: true, expiresAt: true } });
+  if (!s) return "";
+  if (s.createdAt.getTime() + SESSION_HOURS * 60 * 60 * 1000 < Date.now()) return "?reason=expired";
+  return s.expiresAt < new Date() ? "?reason=idle" : "";
+}
 
 // Where each role lands after login.
 export const homeOf = (role: string) => (role === "admin" ? "/admin" : role === "clinician" ? "/hospital" : "/patients");
@@ -78,7 +106,7 @@ export const homeOf = (role: string) => (role === "admin" ? "/admin" : role === 
 // cannot use the system (admins are never switched off, so they can switch it back on).
 export async function requireUser(opts: { allowPasswordChange?: boolean } = {}): Promise<CurrentUser> {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(`/login${await endedReason()}`);
   if (user.mustChangePassword && !opts.allowPasswordChange) redirect("/account/password");
   if (user.role !== "admin") {
     const s = await getSettings();

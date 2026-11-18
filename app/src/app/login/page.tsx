@@ -14,9 +14,17 @@ import { LoginForm } from "./login-form";
 // Drop an approved logo file at app/public/logo.png and it replaces the heart mark; no code change.
 const hasLogo = existsSync(path.join(process.cwd(), "public", "logo.png"));
 
-export default async function LoginPage() {
+// Why the user is back here (?reason=), shown above the form.
+const REASONS: Record<string, string> = {
+  idle: "ออกจากระบบอัตโนมัติ เพราะไม่มีการใช้งานนานเกิน 30 นาที กรุณาเข้าสู่ระบบอีกครั้ง",
+  expired: "ครบเวลาการเข้าใช้งาน 8 ชั่วโมงแล้ว กรุณาเข้าสู่ระบบอีกครั้ง",
+};
+
+export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const user = await getCurrentUser();
   if (user) redirect(homeOf(user.role)); // already logged in
+  const reason = (await searchParams).reason;
+  const notice = typeof reason === "string" ? REASONS[reason] : undefined;
 
   return (
     <main className="lg">
@@ -48,7 +56,7 @@ export default async function LoginPage() {
       </section>
 
       <section className="lg-side">
-        <LoginForm />
+        <LoginForm notice={notice} />
         <p className="lg-foot">เวอร์ชัน 2.0 โครงการพัฒนาร่วมกับ รพ.เชียงรายประชานุเคราะห์</p>
       </section>
     </main>

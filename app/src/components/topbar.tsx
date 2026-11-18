@@ -5,14 +5,20 @@
 import { Shell, type NavSection } from "@/components/ui/shell";
 import { db } from "@/lib/db";
 import { audiencesFor } from "@/lib/manuals";
-import { HOSPITAL, ROLE_LABEL, homeOf, requireUser } from "@/lib/session";
+import { countOpenCases } from "@/lib/open-cases";
+import { HOSPITAL, IDLE_MINUTES, ROLE_LABEL, homeOf, requireUser } from "@/lib/session";
 
 const STEPS = ["ค้นหาผู้ป่วย", "กรอกข้อมูล", "ผลประเมิน", "แจ้งเตือนและคำแนะนำ", "ยืนยัน"];
 
 type Menu = "patients" | "new" | "alerts" | "cases" | "audit" | "overview" | "users" | "facilities" | "apatients" | "criteria" | "settings" | "manuals" | "areas" | "amanuals";
 
-export async function Topbar({ step, crumb, menu }: { step?: number; crumb?: string; menu?: Menu }) {
+// caseId: on the pages of one case (steps 2 to 5), that case is not counted in the open-cases bar.
+export async function Topbar({ step, crumb, menu, hideOpenNotice, caseId }: { step?: number; crumb?: string; menu?: Menu; hideOpenNotice?: boolean; caseId?: number }) {
   const user = await requireUser();
+  // รพ.สต.: cases saved but not closed block new work (src/lib/open-cases.ts); say so on every page
+  const open = user.role === "pcu" && user.facility && !hideOpenNotice ? await countOpenCases(user.facility, caseId) : 0;
+  // for the log-out popup: every open case of the unit (the one on screen stays open too)
+  const openAll = user.role === "pcu" && user.facility ? await countOpenCases(user.facility) : 0;
   const hospital = user.role === "admin" || user.role === "clinician";
   const waiting = hospital ? await db.screening.count({ where: { isAlert: true, acknowledgedAt: null } }) : 0;
   const waitingDose = hospital ? await db.screening.count({ where: { isAlert: true, alertKind: "dose", acknowledgedAt: null } }) : 0;
@@ -85,10 +91,18 @@ export async function Topbar({ step, crumb, menu }: { step?: number; crumb?: str
       active={menu}
       home={homeOf(user.role)}
       crumb={{ place: user.facility ?? HOSPITAL, page: crumb }}
-      user={{ name: user.displayName, role: ROLE_LABEL[user.role] ?? user.role, initials }}
+      user={{
+        name: user.displayName,
+        // pcu staff see their own unit next to their name, e.g. "เจ้าหน้าที่ รพ.สต.บ้านดู่".
+        role: user.role === "pcu" && user.facility ? `เจ้าหน้าที่ ${user.facility}` : ROLE_LABEL[user.role] ?? user.role,
+        initials,
+      }}
       bell={hospital ? { count: waiting, href: waitingDose ? "/hospital?kind=dose" : "/hospital?kind=risk" } : undefined}
       manuals={manuals}
       steps={user.role === "pcu" && step !== undefined ? { labels: STEPS, current: step } : undefined}
+      idleMinutes={IDLE_MINUTES}
+      logoutWarn={openAll ? `หน่วยบริการนี้ยังมี ${openAll} เคสที่ยังไม่ได้ยืนยันปิดเคส` : undefined}
+      notice={open ? { text: `${caseId ? "นอกจากเคสนี้ ยังมี" : "มี"} ${open} เคสที่ยังไม่ได้ยืนยันปิดเคส ต้องปิดให้ครบก่อนจึงจะเริ่มคัดกรองหรือเพิ่มผู้ป่วยใหม่ได้`, href: "/patients#open-cases", link: "ดูเคสที่ค้าง" } : undefined}
     />
   );
 }

@@ -31,7 +31,7 @@ describe("describeAction / describeTarget", () => {
     expect(describeAction("login.success").warn).toBeUndefined();
   });
   it("unknown code falls back to itself", () => expect(describeAction("x.y").label).toBe("x.y"));
-  it("categories", () => expect(actionsIn("auth")).toEqual(["login.success", "login.failed", "logout", "access.denied", "record.denied", "account.password.change", "login.inactive"]));
+  it("categories", () => expect(actionsIn("auth")).toEqual(["login.success", "login.failed", "logout", "logout.idle", "login.locked", "access.denied", "record.denied", "account.password.change", "login.inactive"]));
   it("targets", () => {
     expect(describeTarget("Screening", 5)).toBe("เคสคัดกรอง #5");
     expect(describeTarget("Patient", 3)).toBe("ผู้ป่วย #3");

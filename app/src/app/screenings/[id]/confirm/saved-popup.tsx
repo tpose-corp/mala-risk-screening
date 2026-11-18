@@ -13,7 +13,7 @@ export function SavedPopup({ name, time }: { name: string; time: string }) {
   const pathname = usePathname();
   if (!open) return null;
   return (
-    <Modal tone="ok" title="ยืนยันและส่ง รพ. เรียบร้อยแล้ว" onClose={() => { setOpen(false); router.replace(pathname, { scroll: false }); }}>
+    <Modal tone="ok" title="ยืนยันปิดเคสเรียบร้อยแล้ว" onClose={() => { setOpen(false); router.replace(pathname, { scroll: false }); }}>
       <p>บันทึกการยืนยันของ {name} แล้ว เมื่อ {time}</p>
     </Modal>
   );

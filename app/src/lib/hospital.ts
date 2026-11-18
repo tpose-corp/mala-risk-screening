@@ -12,7 +12,10 @@ export async function loadCaseForHospital(rawId: string, user: CurrentUser) {
   const s = Number.isInteger(id)
     ? await db.screening.findUnique({
         where: { id },
-        include: { patient: true, screener: true, confirmedBy: true, acknowledgedBy: true, followUpBy: true },
+        include: {
+          patient: true, screener: true, confirmedBy: true, acknowledgedBy: true, followUpBy: true,
+          followUpNotes: { include: { by: true }, orderBy: { at: "desc" } }, // the full note history
+        },
       })
     : null;
   if (!s) notFound();

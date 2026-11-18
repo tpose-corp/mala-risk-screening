@@ -1,10 +1,14 @@
 import { Topbar } from "@/components/topbar";
 import { PageHead } from "@/components/ui/card";
+import { redirect } from "next/navigation";
+import { countOpenCases } from "@/lib/open-cases";
 import { requireFacilityStaff } from "@/lib/session";
 import { NewPatientForm } from "./new-patient-form";
 
 export default async function NewPatientPage() {
   const user = await requireFacilityStaff();
+  // Open cases must be closed first; the patient list shows them and says why.
+  if (await countOpenCases(user.facility)) redirect("/patients?blocked=1");
   return (
     <>
       <Topbar menu="new" step={0} crumb="เพิ่มผู้ป่วยใหม่" />

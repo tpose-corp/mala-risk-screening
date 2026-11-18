@@ -11,12 +11,12 @@ const TOTAL = 120;
 export function EgfrMeter({ value }: { value: number }) {
   const pct = Math.max(0, Math.min(100, (value / TOTAL) * 100));
   return (
-    <div className="egfr-meter" aria-label={`eGFR ${value}`}>
+    <div className="egfr-meter" role="img" aria-label={`eGFR ${value}`}>
       <div className="bar">
         {ZONES.map((z) => (
           <div key={z.label} style={{ width: `${((z.max - z.min) / TOTAL) * 100}%`, background: z.color }} />
         ))}
-        <div className="marker" style={{ left: `${pct}%` }} />
+        <div className="marker" style={{ left: `${pct}%` }}><span>{value}</span></div>
       </div>
       <div className="zl">
         {ZONES.map((z) => (

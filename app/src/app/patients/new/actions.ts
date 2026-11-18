@@ -7,6 +7,7 @@
 //   ID known but no home unit    → this unit becomes the home unit
 // The refusal shows only the other unit's name, nothing else about the patient (PDPA).
 
+import { countOpenCases } from "@/lib/open-cases";
 import { RedirectType, redirect } from "next/navigation";
 import { z } from "zod";
 import { asActor } from "@/lib/actor";
@@ -39,6 +40,7 @@ const NewPatientSchema = z.object({
 
 export async function createPatient(_prev: NewPatientState, formData: FormData): Promise<NewPatientState> {
   const user = await requireFacilityStaff(); // always re-check login inside an action, not only on the page
+  if (await countOpenCases(user.facility)) redirect("/patients?blocked=1"); // open cases first (src/lib/open-cases.ts)
 
   const parsed = NewPatientSchema.safeParse({
     cardId: formData.get("cardId") ?? "",

@@ -9,7 +9,7 @@ export function AdviceForm({ screeningId }: { screeningId: number }) {
   const [advised, setAdvised] = useState(false);
 
   return (
-    <form onSubmit={submitWithoutReset(action)} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <form method="post" onSubmit={submitWithoutReset(action)} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <label className="check">
         <input type="checkbox" name="advised" checked={advised} onChange={(e) => setAdvised(e.target.checked)} />
         ข้าพเจ้าได้แจ้งคำแนะนำนี้ให้ผู้ป่วยรับทราบแล้ว

@@ -57,6 +57,7 @@ model User {
   screeningsConfirmed Screening[] @relation("confirmer")
   alertsAcknowledged  Screening[] @relation("acknowledger")
   followUps           Screening[] @relation("followUp")
+  followUpNotes       FollowUpNote[]
   amendments          Amendment[]
   ruleSets            RuleSet[]
   manuals             Manual[]
@@ -149,7 +150,8 @@ model Screening {
   acknowledgedAt   DateTime?
   acknowledgedById Int?
   acknowledgedBy   User?     @relation("acknowledger", fields: [acknowledgedById], references: [id])
-  followUpNote     String? // what the doctor / nurse decided to do with the patient
+  followUpNote     String? // the LATEST note, for lists; the full history is FollowUpNote
+  followUpNotes    FollowUpNote[]
   followUpAt       DateTime?
   followUpById     Int?
   followUpBy       User?     @relation("followUp", fields: [followUpById], references: [id])
@@ -165,6 +167,20 @@ model Screening {
   @@index([patientId, createdAt])
   @@index([facility, createdAt])
   @@index([createdAt])
+}
+
+// "การดำเนินการกับผู้ป่วย": every note a doctor / nurse writes on a case, who wrote it and when.
+// Append-only (a database trigger refuses UPDATE and DELETE): a new note never replaces an old one.
+model FollowUpNote {
+  id          Int       @id @default(autoincrement())
+  at          DateTime  @default(now())
+  screeningId Int
+  screening   Screening @relation(fields: [screeningId], references: [id])
+  byId        Int
+  by          User      @relation(fields: [byId], references: [id])
+  note        String
+
+  @@index([screeningId, at])
 }
 
 // Every change to a patient or a screening after it was saved: who, when, which field, old and

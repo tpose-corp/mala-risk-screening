@@ -4,14 +4,14 @@ import { hasFilters, queryFor, readFilters, whereFor } from "./case-filters";
 
 describe("readFilters", () => {
   it("defaults", () => {
-    expect(readFilters({})).toEqual({ q: "", fac: "", period: "all", result: "all" });
+    expect(readFilters({})).toEqual({ q: "", fac: "", period: "all", result: "all", from: "", to: "" });
   });
   it("reads valid values and trims the search", () => {
-    expect(readFilters({ q: "  สมชาย ", fac: "รพ.สต.นางแล", period: "30d", result: "alert" }))
-      .toEqual({ q: "สมชาย", fac: "รพ.สต.นางแล", period: "30d", result: "alert" });
+    expect(readFilters({ q: "  สมชาย ", fac: "รพ.สต.นางแล", period: "30d", result: "alert", from: "", to: "" }))
+      .toEqual({ q: "สมชาย", fac: "รพ.สต.นางแล", period: "30d", result: "alert", from: "", to: "" });
   });
   it("ignores junk values", () => {
-    expect(readFilters({ period: "1y", result: "maybe", q: ["a", "b"] })).toEqual({ q: "", fac: "", period: "all", result: "all" });
+    expect(readFilters({ period: "1y", result: "maybe", q: ["a", "b"] })).toEqual({ q: "", fac: "", period: "all", result: "all", from: "", to: "" });
   });
 });
 
@@ -31,6 +31,22 @@ describe("whereFor", () => {
   it("period on createdAt has no 'not: null' (Prisma rejects it on a required column)", () => {
     const w = whereFor(readFilters({ period: "30d" }), "createdAt") as Record<string, Record<string, unknown>>;
     expect(Object.keys(w.createdAt)).toEqual(["gte"]);
+  });
+});
+
+describe("date range (from / to)", () => {
+  it("reads a พ.ศ. range and filters the whole last day", () => {
+    const f = readFilters({ from: "01/01/2568", to: "31/12/2568" });
+    expect([f.from, f.to]).toEqual(["01/01/2568", "31/12/2568"]);
+    const w = whereFor(f, "createdAt") as Record<string, { gte: Date; lt: Date }>;
+    expect(w.createdAt.gte.toISOString()).toBe("2024-12-31T17:00:00.000Z"); // 1 Jan 2025 00:00 Bangkok
+    expect(w.createdAt.lt.toISOString()).toBe("2025-12-31T17:00:00.000Z"); // up to 31 Dec, whole day
+    expect(hasFilters(f)).toBe(true);
+    expect(queryFor(f)).toBe("?from=01%2F01%2F2568&to=31%2F12%2F2568");
+  });
+  it("swaps a range picked backwards and ignores junk", () => {
+    expect(readFilters({ from: "31/12/2568", to: "01/01/2568" }).from).toBe("01/01/2568");
+    expect(readFilters({ from: "2568-01-01", to: "x" })).toMatchObject({ from: "", to: "" });
   });
 });
 

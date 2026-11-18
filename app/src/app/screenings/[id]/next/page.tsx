@@ -10,6 +10,9 @@ import { adviceFor, tasksFor } from "@/lib/advice";
 import { thaiDateTime } from "@/lib/format";
 import { loadScreening } from "@/lib/screening";
 import { requireFacilityStaff } from "@/lib/session";
+import { Facts } from "../confirm/confirm-form";
+import { ScreeningSummary } from "../confirm/summary";
+import { OpenCaseGuard } from "@/components/leave-guard";
 import { AdviceForm } from "./advice-form";
 
 export default async function NextStepPage({ params }: PageProps<"/screenings/[id]/next">) {
@@ -22,37 +25,37 @@ export default async function NextStepPage({ params }: PageProps<"/screenings/[i
 
   return (
     <>
-      <Topbar menu="patients" step={3} crumb="แจ้งเตือนและคำแนะนำ" />
-      <main className="page">
-        <div className="center">
-          <div className="card doc">
+      <Topbar menu="patients" step={3} crumb="แจ้งเตือนและคำแนะนำ" caseId={s.id} />
+      {/* Same two-column, one-screen layout as step 5: what to tell the patient on the left,
+          the "advice given" tick and the button on the right (always in view). */}
+      <OpenCaseGuard screeningId={s.id} patientId={s.patientId} />
+      <main className="page split cf-split">
+        <div className="main">
+          <div className="card doc cf-doc">
             <CaseHead name={s.patient.name} hn={s.patient.hn} dob={s.patient.dob} isAlert={s.isAlert} />
+            <ScreeningSummary s={s} only="result" />
 
             {s.isAlert && (
               <section className="doc-sec">
                 <h2>แจ้งโรงพยาบาลแม่ข่ายแล้ว</h2>
-                <dl className="doc-rows">
-                  <dt>เวลาที่แจ้ง</dt>
-                  <dd>{s.alertRaisedAt ? thaiDateTime(s.alertRaisedAt) : ""}</dd>
-                  <dt>การรับเรื่อง</dt>
-                  <dd>
-                    {s.acknowledgedAt
-                      ? `รับแล้วโดย ${s.acknowledgedBy?.displayName}`
-                      : <span className="muted">รอแพทย์รับเรื่อง</span>}
-                  </dd>
-                </dl>
-                <p className="doc-note">เรื่องยาให้แพทย์เป็นผู้พิจารณา</p>
+                <Facts rows={[
+                  { k: "เวลาที่แจ้ง", v: s.alertRaisedAt ? thaiDateTime(s.alertRaisedAt) : "" },
+                  s.acknowledgedAt
+                    ? { k: "การรับเรื่อง", v: `รับแล้วโดย ${s.acknowledgedBy?.displayName}` }
+                    : { k: "การรับเรื่อง", v: "รอแพทย์รับเรื่อง", muted: true },
+                  { k: "เรื่องยา", v: "แพทย์เป็นผู้พิจารณา" },
+                ]} />
               </section>
             )}
 
             {needsAdvice ? (
               <section className="doc-sec">
                 <h2>แจ้งผู้ป่วย {cards.length} เรื่อง</h2>
-                <ol className="doc-list advice-list">
-                  {cards.map((c) => (
+                <ol className="cf-advice">
+                  {cards.map((c, i) => (
                     <li key={c.title}>
-                      <b>{c.title}</b>
-                      {c.body && <span>{c.body}</span>}
+                      <span className="n">{i + 1}</span>
+                      <div><b>{c.title}</b>{c.body && <span>{c.body}</span>}</div>
                     </li>
                   ))}
                 </ol>
@@ -65,13 +68,23 @@ export default async function NextStepPage({ params }: PageProps<"/screenings/[i
               )
             )}
           </div>
+        </div>
 
+        <aside className="side cf-side">
+          <div className="card doc cf-doc">
+            <section className="doc-sec">
+              <h2>สิ่งที่ต้องทำ</h2>
+              <p className="note" style={{ margin: 0 }}>
+                {needsAdvice ? `อ่านคำแนะนำ ${cards.length} เรื่องให้ผู้ป่วยฟัง แล้วติ๊กยืนยันด้านล่าง` : "ไม่มีคำแนะนำที่ต้องแจ้ง ไปขั้นตอนยืนยันปิดเคสได้เลย"}
+              </p>
+            </section>
+          </div>
           {needsAdvice ? (
             <AdviceForm screeningId={s.id} />
           ) : (
             <Link href={`/screenings/${s.id}/confirm`} className="btn">ดำเนินการต่อ</Link>
           )}
-        </div>
+        </aside>
       </main>
     </>
   );

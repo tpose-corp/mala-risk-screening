@@ -5,6 +5,7 @@ import { EgfrMeter } from "@/components/egfr-meter";
 import { Topbar } from "@/components/topbar";
 import { tasksFor } from "@/lib/advice";
 import { criteriaFor } from "@/lib/criteria";
+import { OpenCaseGuard } from "@/components/leave-guard";
 import { LockedNotice } from "./locked-notice";
 import { db } from "@/lib/db";
 import { ALCOHOL_LABEL, TRIGGER_LABEL, thaiDate, thaiDateTime } from "@/lib/format";
@@ -48,13 +49,14 @@ export default async function ResultPage({ params, searchParams }: PageProps<"/s
     { k: "น้ำหนัก", unit: "กก.", now: s.weightKg, before: prev?.weightKg },
     { k: "ส่วนสูง", unit: "ซม.", now: s.heightCm, before: prev?.heightCm },
     { k: "BMI", unit: "kg/m²", now: s.bmi, before: prev?.bmi },
-    { k: "eGFR", unit: "", now: s.egfr, before: prev?.egfr },
-    { k: "ขนาดยา Metformin", unit: "มก./วัน", now: s.doseMgDay, before: prev?.doseMgDay },
+    { k: "eGFR", unit: "mL/min", now: s.egfr, before: prev?.egfr },
+    { k: "ขนาดยา", unit: "มก./วัน", now: s.doseMgDay, before: prev?.doseMgDay },
   ];
 
   return (
     <>
-      <Topbar menu="patients" step={2} crumb="ผลประเมิน" />
+      <Topbar menu="patients" step={2} crumb="ผลประเมิน" caseId={s.id} />
+      {!s.confirmedAt && <OpenCaseGuard screeningId={s.id} patientId={s.patientId} />}
       <main className="page split">
         <div className="main">
           <div className={`card banner ${tone}`}>
@@ -64,33 +66,40 @@ export default async function ResultPage({ params, searchParams }: PageProps<"/s
               </svg>
             </div>
             <div>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: `var(--${tone})`, textTransform: "uppercase", letterSpacing: ".04em" }}>
-                {s.isAlert ? "แจ้งเตือนแล้ว (Alert)" : "ไม่แจ้งเตือน (No Alert)"}
+              {/* The headline says which group the patient is in, using the hospital's two alert kinds
+                  (same names as the hospital inbox tabs), so the screener sees the result at once. */}
+              <div style={{ fontSize: 20, fontWeight: 800, color: `var(--${tone})`, lineHeight: 1.3 }}>
+                {s.alertKind === "dose" ? "ผู้ป่วยใช้ยาเกินขนาด" : s.isAlert ? "ผู้ป่วยกลุ่มเสี่ยง MALA" : "ไม่พบความเสี่ยงที่ต้องแจ้งเตือน"}
               </div>
-              <div style={{ marginTop: 3, fontSize: 17, fontWeight: 700 }}>{s.patient.name}</div>
+              <div style={{ marginTop: 2, fontSize: 15, fontWeight: 700 }}>{s.patient.name}</div>
               <div className="tag-row">{reasons.map((r) => <span key={r} style={{ color: `var(--${tone})` }}>{r}</span>)}</div>
+              {s.isAlert && (
+                <div className="banner-sent">
+                  ระบบแจ้งเตือนแพทย์ รพ. แล้ว เมื่อ {thaiDateTime(s.alertRaisedAt ?? s.createdAt)}
+                  {s.alertKind === "dose" ? " แพทย์จะพิจารณาปรับขนาดยาให้เหมาะสม" : " แพทย์จะติดตามและพิจารณาการรักษา"}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* ---------- measured values, this time vs last time ---------- */}
+          {/* ---------- measured values: one tile each, this time big, last time under it ---------- */}
           <div className="card pad">
-            <div className="sec-title">ค่าที่วัดได้</div>
-            <table className="measure">
-              <thead>
-                <tr><th /><th>ครั้งนี้ ({thaiDate(s.createdAt)})</th><th>ครั้งก่อน {prev ? `(${thaiDate(prev.createdAt)})` : ""}</th></tr>
-              </thead>
-              <tbody>
-                {measures.map((m) => (
-                  <tr key={m.k}>
-                    <td>{m.k}</td>
-                    <td><b>{fmt(m.now)}</b> {m.unit}</td>
-                    <td>{m.before === undefined ? <span className="note">ยังไม่เคยคัดกรอง</span> : <>{fmt(m.before)} {m.unit}<Delta now={m.now} before={m.before} /></>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="part-h">
+              <div className="sec-title" style={{ margin: 0 }}>ค่าที่วัดได้</div>
+              <span className="note">ครั้งนี้ {thaiDate(s.createdAt)}{prev ? ` เทียบครั้งก่อน ${thaiDate(prev.createdAt)}` : " (ยังไม่เคยคัดกรอง)"}</span>
+            </div>
+            <div className="res-tiles">
+              {measures.map((m) => (
+                <div key={m.k} className="res-tile">
+                  <div className="k">{m.k}</div>
+                  <div className="v">{fmt(m.now)} <small>{m.unit}</small></div>
+                  <div className="p">{m.before === undefined ? "ครั้งก่อน ไม่มี" : <>ครั้งก่อน {fmt(m.before)}<Delta now={m.now} before={m.before} /></>}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
+          <div className="res-grid">
           {/* ---------- Part 1 ---------- */}
           <Part no={1} title="ขนาดยา Metformin เทียบกับ eGFR (CPG)" ok={s.doseCheck === "ok"} okText="เหมาะสม" badText={s.doseCheck === "contraindicated" ? "ห้ามใช้ยา" : "ไม่เหมาะสม"}>
             {doseBands(p).map((b) => (
@@ -113,7 +122,10 @@ export default async function ResultPage({ params, searchParams }: PageProps<"/s
             <div className="kv total"><b>รวม ({p.riskGroupMinScore} คะแนนขึ้นไป = กลุ่มเสี่ยง)</b><span className="v">{s.riskScore} คะแนน</span></div>
           </Part>
 
+          </div>
+
           {/* ---------- Part 3 + 4 ---------- */}
+          <div className="res-grid">
           <Part no={3} title="อาการขาดน้ำหรือขาดอาหาร" ok={!part3} okText="ไม่พบ" badText="พบ ต้องแนะนำ Sick Day Rules" warn>
             <Found label={TRIGGER_LABEL.vomiting} on={s.vomiting} />
             <Found label={TRIGGER_LABEL.lowIntake} on={s.lowIntake} />
@@ -122,9 +134,10 @@ export default async function ResultPage({ params, searchParams }: PageProps<"/s
             <Found label={TRIGGER_LABEL.nsaid} on={s.nsaid} note={s.nsaidNote} />
             <Found label={TRIGGER_LABEL.herbal} on={s.herbal} note={s.herbalNote} />
           </Part>
+          </div>
         </div>
 
-        <aside className="side" style={{ width: 300 }}>
+        <aside className="side res-side" style={{ width: 300 }}>
           <div className="card pad todo">
             <div className="todo-h">สิ่งที่คุณต้องทำ</div>
             <ol>{tasks.staff.map((t) => <li key={t}>{t}</li>)}</ol>
@@ -139,15 +152,33 @@ export default async function ResultPage({ params, searchParams }: PageProps<"/s
           <div className="card pad">
             <div className="todo-h">เวลา</div>
             <ul className="timeline">
-              <li><b>บันทึกผลคัดกรอง</b>{thaiDateTime(s.createdAt)}</li>
-              {s.updatedAt.getTime() - s.createdAt.getTime() > 1000 && <li><b>แก้ไขล่าสุด</b>{thaiDateTime(s.updatedAt)}</li>}
-              {s.alertRaisedAt && <li><b>แจ้งเตือน รพ.</b>{thaiDateTime(s.alertRaisedAt)}</li>}
-              {s.confirmedAt && <li><b>ยืนยันและส่ง รพ.</b>{thaiDateTime(s.confirmedAt)}</li>}
+              {/* oldest first, so the list reads in the order things happened */}
+              {([
+                { label: "บันทึกผลคัดกรอง", at: s.createdAt },
+                { label: "แจ้งเตือน รพ.", at: s.alertRaisedAt },
+                { label: "แก้ไขล่าสุด", at: s.updatedAt.getTime() - s.createdAt.getTime() > 1000 ? s.updatedAt : null },
+                { label: "ยืนยันปิดเคส", at: s.confirmedAt },
+              ] as { label: string; at: Date | null }[])
+                .flatMap((t) => (t.at ? [{ label: t.label, at: t.at }] : []))
+                .sort((x, y) => Math.floor(x.at.getTime() / 60000) - Math.floor(y.at.getTime() / 60000)) // by minute, as shown; same minute keeps this order
+                .map((t) => <li key={t.label}><b>{t.label}</b>{thaiDateTime(t.at)}</li>)}
             </ul>
           </div>
-          <Link href={next} className="btn" style={{ background: `var(--${tone})` }}>ดำเนินการต่อ</Link>
+          {/* the main button is always the system colour; the result colour is already on the banner */}
+          <Link href={next} className="btn">ดำเนินการต่อ</Link>
           <LockedNotice editHref={s.confirmedAt ? null : `/patients/${s.patientId}/screen?edit=${s.id}`} contact={adminContact} openAtStart={locked === "1"} />
-          <Link href="/patients" className="btn-s">กลับไปรายชื่อผู้ป่วย</Link>
+          {/* Leaving does not cancel anything: the result is saved (and any alert already sent) when
+              "ประมวลผล" is pressed. The case stays "ยังไม่ยืนยัน" and can be reopened from the list. */}
+          <div className="later">
+            {s.confirmedAt ? (
+              <Link href="/patients">← กลับไปรายชื่อผู้ป่วย</Link>
+            ) : (
+              <>
+                <Link href="/patients" data-leave-ok>ทำต่อภายหลัง กลับไปรายชื่อผู้ป่วย</Link>
+                <span>ผลนี้บันทึกแล้ว{s.isAlert ? " และแจ้ง รพ. แล้ว" : ""} กลับมายืนยันได้จากรายชื่อผู้ป่วย</span>
+              </>
+            )}
+          </div>
         </aside>
       </main>
     </>
@@ -182,5 +213,5 @@ function Found({ label, on, note }: { label: string; on: boolean; note?: string 
 function Delta({ now, before }: { now: number; before: number }) {
   const d = now - before;
   if (Math.abs(d) < 0.05) return null;
-  return <span className="delta">ครั้งนี้{d > 0 ? "เพิ่มขึ้น" : "ลดลง"} {Math.abs(d).toFixed(1)}</span>;
+  return <span className={`delta ${d > 0 ? "up" : "down"}`}>{d > 0 ? "▲" : "▼"} {Math.abs(d).toFixed(1)}</span>;
 }

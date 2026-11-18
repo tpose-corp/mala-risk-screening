@@ -25,8 +25,11 @@ type Row = { key: number; unitId: string; amount: string };
 let nextKey = 1; // each row gets its own React key, so deleting a middle row can't mix rows up
 const newRow = (): Row => ({ key: nextKey++, unitId: "", amount: "" });
 
-export function AlcoholSection({ sex, error, initial }: { sex: string; error?: string; initial?: { drinks: YN; binge: YN; regular: YN } }) {
-  const [drinks, setDrinks] = useState<YN>(initial?.drinks ?? "no");
+// A new screening starts with NO answer picked, so the screener has to ask (17-18 Nov 2026).
+export function AlcoholSection({ sex, error, initial, onAnswer }: {
+  sex: string; error?: string; initial?: { drinks: YN; binge: YN; regular: YN }; onAnswer?: (v: YN) => void;
+}) {
+  const [drinks, setDrinks] = useState<YN | "">(initial?.drinks ?? "");
   const [rows, setRows] = useState<Row[]>(() => [newRow()]);
   const [days, setDays] = useState<number | null>(null);
   // Manual answers win over the calculated ones until the calculator inputs change again.
@@ -58,7 +61,7 @@ export function AlcoholSection({ sex, error, initial }: { sex: string; error?: s
   return (
     <div className="alc">
       <Choice label="ดื่มเหล้า เบียร์ ไวน์ หรือสุราพื้นบ้านบ้างไหม" name="drinksAlcohol" value={drinks}
-        onPick={(v) => setDrinks(v)} labels={["ไม่ดื่ม", "ดื่ม"]} />
+        onPick={(v) => { setDrinks(v); onAnswer?.(v); }} labels={["ไม่ดื่ม", "ดื่ม"]} invalid={!!error && drinks === ""} />
 
       {drinks === "yes" && (
         <div className="alc-box" ref={boxRef}>
@@ -125,15 +128,15 @@ export function AlcoholSection({ sex, error, initial }: { sex: string; error?: s
   );
 }
 
-function Choice(props: { label: string; sub?: string; name: string; value: string; onPick: (v: YN) => void; labels?: [string, string] }) {
+function Choice(props: { label: string; sub?: string; name: string; value: string; onPick: (v: YN) => void; labels?: [string, string]; invalid?: boolean }) {
   const [noLabel, yesLabel] = props.labels ?? ["ไม่ใช่", "ใช่"];
   return (
-    <div className="kv q-row">
+    <div className={`kv q-row${props.invalid ? " q-bad" : ""}`}>
       <span className="k">
         {props.label}
         {props.sub && <small className="q-sub">{props.sub}</small>}
       </span>
-      <div className="seg" style={{ width: 150, flexShrink: 0 }} role="radiogroup" aria-label={props.label}>
+      <div className="seg" style={{ width: 150, flexShrink: 0 }} role="radiogroup" aria-label={props.label} aria-invalid={props.invalid || undefined}>
         <label><input type="radio" name={props.name} value="no" checked={props.value === "no"} onChange={() => props.onPick("no")} />{noLabel}</label>
         <label><input type="radio" name={props.name} value="yes" checked={props.value === "yes"} onChange={() => props.onPick("yes")} />{yesLabel}</label>
       </div>
