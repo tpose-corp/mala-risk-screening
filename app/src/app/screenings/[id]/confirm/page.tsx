@@ -85,6 +85,8 @@ export default async function ConfirmPage({ params, searchParams }: PageProps<"/
             facility={user.facility}
             now={thaiDateTime(new Date())}
             ruleVersion={s.ruleVersion}
+            patient={s.patient.hn ? `${s.patient.name} (HN ${s.patient.hn})` : s.patient.name}
+            result={s.alertKind === "dose" ? "ผู้ป่วยใช้ยาเกินขนาด" : s.isAlert ? "ผู้ป่วยกลุ่มเสี่ยง MALA" : "ไม่พบความเสี่ยงที่ต้องแจ้งเตือน"}
           />
       </main>
     </>
