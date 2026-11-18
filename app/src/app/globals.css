@@ -1407,3 +1407,14 @@ body:has(.ui-side) { transition: padding-left .2s ease; }
 .cs-mini.hi { color: var(--hi); border-color: #f0c9c5; background: var(--hi-soft); }
 .ui-card-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ui-card-head:has(.cs-form) .ui-card-actions { position: relative; z-index: 30; }
+/* result page right column: follow the page on real laptop windows too (~650px tall inside the
+   browser on a 1366x768 screen). Compact enough to fit; only very short windows (< 560px) scroll it. */
+.split > .side.res-side { gap: 10px; }
+.res-side .card.pad { padding: 12px 14px; }
+.res-side .todo-h { margin-bottom: 4px; }
+.res-side .todo ol { gap: 3px; }
+.res-side .todo .bullets li { line-height: 1.45; }
+.res-side .draft-flag { margin-top: 8px !important; }
+.res-side .later { padding-top: 8px; margin-top: 0; }
+@media (max-height: 700px) and (min-width: 1101px) { .split > .side.res-side { position: sticky; } }
+@media (max-height: 560px) { .split > .side.res-side { position: static; } }
