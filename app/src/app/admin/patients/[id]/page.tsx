@@ -1,20 +1,30 @@
 // /admin/patients/[id] — everything about one patient for the hospital admin: identity check,
 // edit with a reason, every screening at every unit (each can be corrected with a reason), and
 // the full change history with old and new values, dates and times.
+// Layout (built to stay tidy as the history grows): a top row with who the patient is, the key
+// dates and the on/off switch; below it, full width, the two histories as tabs, each table one or
+// two lines per row and folded after 10 rows ("ดูเพิ่มอีก").
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Topbar } from "@/components/topbar";
 import { ConfirmSubmit } from "@/components/ui/confirm-submit";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
-import { ageFromThaiDob, cardIdChecksumOk, formatCardId, thaiDateTime } from "@/lib/format";
+import { ageFromThaiDob, cardIdChecksumOk, formatCardId, thaiDate, thaiDateTime } from "@/lib/format";
+import { PatientEditCard } from "./patient-edit";
+import { ActiveToggle, FoldRows, Tabs, Timeline, VerifyBox, type TimelineItem } from "./patient-panels";
+
+// "14:05 น."
+const timeOf = (d: Date) => thaiDateTime(d).slice(thaiDate(d).length).trim();
+// errors from the edit form are shown at their box in the card, not in the banner
+const EDIT_ERRORS = ["name", "dob", "sex", "card", "carddup", "hn", "hndup", "phone"];
 import { safeBack } from "@/lib/back-link";
 import { requireAdmin } from "@/lib/session";
 import { amendScreening, setPatientActive, updatePatient, verifyPatient } from "../actions";
 
 const MSG: Record<string, string> = {
   verified: "ยืนยันตัวตนผู้ป่วยแล้ว", saved: "บันทึกแล้ว", nochange: "ไม่มีข้อมูลที่เปลี่ยน",
-  reason: "กรุณากรอกเหตุผลที่แก้ไข", hn: "HN ใช้ได้เฉพาะตัวเลข คั่นด้วย - หรือ /", hndup: "HN นี้เป็นของผู้ป่วยคนอื่นแล้ว",
+  reason: "กรุณากรอกเหตุผลที่แก้ไข", hn: "HN ใช้ได้เฉพาะตัวเลข คั่นด้วย - หรือ / ยาวไม่เกิน 15 ตัว", phone: "เบอร์โทรต้องขึ้นต้นด้วย 0 และมี 9 หลัก (บ้าน) หรือ 10 หลัก (มือถือ)", hndup: "HN นี้เป็นของผู้ป่วยคนอื่นแล้ว",
   card: "เลขประจำตัวประชาชนต้องมี 13 หลัก", carddup: "เลขประจำตัวประชาชนนี้เป็นของผู้ป่วยคนอื่นแล้ว",
   name: "ชื่อไม่ถูกต้อง", dob: "วันเกิดต้องเป็น วว/ดด/ปปปป (พ.ศ.)", sex: "กรุณาเลือกเพศ", values: "ค่าที่กรอกไม่อยู่ในช่วงที่เป็นไปได้",
 };
@@ -43,17 +53,87 @@ export default async function AdminPatient({ params, searchParams }: PageProps<"
   const facilities = (await db.facility.findMany({ where: { active: true }, orderBy: { name: "asc" } })).map((f) => f.name);
   await audit({ user, action: "hospital.patient.history.view", entity: "Patient", entityId: id, detail: `screenings=${p.screenings.length}` });
   const ok = typeof sp.ok === "string" ? MSG[sp.ok] : null;
-  const err = typeof sp.err === "string" ? MSG[sp.err] : null;
+  const errCode = typeof sp.err === "string" ? sp.err : "";
+  const editErr = EDIT_ERRORS.includes(errCode) ? MSG[errCode] : null;
+  const verifyErr = errCode === "vhn" ? MSG.hn : errCode === "vhndup" ? MSG.hndup : null;
+  const err = errCode && !editErr && !verifyErr ? MSG[errCode] : null;
   const openScreening = Number(sp.s);
   // where "กลับ" goes: the exact list the admin came from (tab, search, page), else the full list
   const backTo = safeBack(sp.back, "/admin/patients") || "/admin/patients";
   const keep = `back=${encodeURIComponent(backTo)}`;
   const backField = <input type="hidden" name="back" value={backTo} />;
 
+  const status = !p.active ? <span className="ui-badge muted">ปิดใช้งาน</span> : p.status === "pending" ? <span className="ui-badge warn">รอยืนยันตัวตน</span> : <span className="ui-badge ok">ยืนยันแล้ว</span>;
+  const whenOf = new Map(p.screenings.map((s) => [s.id, thaiDate(s.createdAt)]));
+
+  const screeningRows = p.screenings.map((s) => {
+    const edited = s.updatedAt.getTime() - s.createdAt.getTime() > 1000;
+    const notes = [s.nsaidNote, s.herbalNote].filter(Boolean).join(", ");
+    return (
+      <tr key={s.id}>
+        <td><b>{thaiDate(s.createdAt)}</b><span className="sub-line">{timeOf(s.createdAt)} โดย {s.screener.displayName}</span></td>
+        <td>{s.facility}{notes ? <span className="sub-line" title={notes}>ระบุยาหรือสมุนไพร</span> : null}</td>
+        <td className="num">{s.egfr}</td>
+        <td className="num">{s.doseMgDay}</td>
+        <td className="num">{s.bmi.toFixed(1)}</td>
+        <td>
+          <span className={`ui-badge ${s.alertKind === "dose" ? "hi" : s.isAlert ? "warn" : "ok"}`}>{s.alertKind === "dose" ? "ใช้ยาเกินขนาด" : s.isAlert ? "เสี่ยงทั่วไป" : "ไม่แจ้งเตือน"}</span>
+          <span className="sub-line" title={`เกณฑ์ ${s.ruleVersion}`}>{s.riskScore} คะแนน{edited ? " แก้ไขแล้ว" : ""}</span>
+        </td>
+        <td>
+          {s.confirmedAt ? <span>ปิดเคสแล้ว</span> : <span className="pa-open">ยังไม่ปิดเคส</span>}
+          <span className="sub-line">{s.acknowledgedAt ? "รพ. รับเรื่องแล้ว" : s.confirmedAt ? thaiDate(s.confirmedAt) : ""}</span>
+        </td>
+        <td>
+          <div className="pa-row-btns">
+            <Link href={`/hospital/cases/${s.id}`} className="ui-btn secondary sm">ดูเคส</Link>
+            <Link href={`/admin/patients/${p.id}?s=${s.id}&${keep}#amend`} className="ui-btn secondary sm">แก้ไขผล</Link>
+          </div>
+        </td>
+      </tr>
+    );
+  });
+
+  const historyRows = history.map((h) => (
+    <tr key={h.id}>
+      <td><b>{thaiDate(h.at)}</b><span className="sub-line">{timeOf(h.at)} โดย {h.by.displayName}</span></td>
+      <td>{FIELD_TH[h.field] ?? h.field}<span className="sub-line">{h.entity === "Screening" ? `ผลคัดกรองวันที่ ${whenOf.get(h.entityId) ?? `#${h.entityId}`}` : "ข้อมูลผู้ป่วย"}</span></td>
+      <td><span className="pa-old">{h.oldValue ?? "ว่าง"}</span><span className="pa-arrow">→</span><b>{h.newValue ?? "ว่าง"}</b></td>
+      <td className="pa-reason" title={h.reason}>{h.reason}</td>
+    </tr>
+  ));
+
+  const amending = p.screenings.find((s) => s.id === openScreening);
+
+  // "วันและเวลา": every event, newest first. Edits saved together (same moment, same person)
+  // are one line listing the fields; switching off / on is its own line.
+  type Ev = TimelineItem & { t: number };
+  const events: Ev[] = [
+    { t: p.registeredAt.getTime(), at: p.registeredAt.toISOString(), when: thaiDateTime(p.registeredAt), text: "ลงทะเบียนในระบบ", who: p.createdBy.displayName, kind: "create" },
+    ...(p.verifiedAt ? [{ t: p.verifiedAt.getTime(), at: p.verifiedAt.toISOString(), when: thaiDateTime(p.verifiedAt), text: "ยืนยันตัวตน", who: p.verifiedBy?.displayName, kind: "verify" as const }] : []),
+    ...p.screenings.map((s) => ({ t: s.createdAt.getTime(), at: s.createdAt.toISOString(), when: thaiDateTime(s.createdAt), text: `คัดกรองที่ ${s.facility}`, who: s.screener.displayName, kind: "screen" as const })),
+  ];
+  const saves = new Map<string, typeof history>();
+  for (const h of history) {
+    if (h.field === "hn" && h.reason === "ยืนยันตัวตนผู้ป่วย") continue; // already the "ยืนยันตัวตน" line
+    const key = `${Math.floor(h.at.getTime() / 2000)}|${h.byId}|${h.entity}|${h.entityId}`;
+    saves.set(key, [...(saves.get(key) ?? []), h]);
+  }
+  for (const rows of saves.values()) {
+    const h = rows[0];
+    const onoff = rows.find((r) => r.field === "active");
+    const fields = [...new Set(rows.filter((r) => r.field !== "active").map((r) => FIELD_TH[r.field] ?? r.field))];
+    const what = onoff
+      ? onoff.newValue === "false" ? "ปิดใช้งานผู้ป่วย" : "เปิดใช้งานผู้ป่วยอีกครั้ง"
+      : h.entity === "Screening" ? `แก้ไขผลคัดกรองวันที่ ${whenOf.get(h.entityId) ?? `#${h.entityId}`} (${fields.join(", ")})` : `แก้ไข${/^[A-Za-z]/.test(fields[0] ?? "") ? " " : ""}${fields.join(", ")}`;
+    events.push({ t: h.at.getTime(), at: h.at.toISOString(), when: thaiDateTime(h.at), text: what, who: h.by.displayName, kind: onoff ? (onoff.newValue === "false" ? "off" : "on") : "edit" });
+  }
+  const timeline: TimelineItem[] = events.sort((a, b) => b.t - a.t).map((e) => ({ at: e.at, when: e.when, text: e.text, who: e.who, kind: e.kind }));
+
   return (
     <>
       <Topbar menu="apatients" crumb="จัดการข้อมูลผู้ป่วย" />
-      <main className="page">
+      <main className="ui-page">
         {/* stays on screen while scrolling: who this is, and the way back */}
         <div className="ui-sticky">
           <div className="ui-head">
@@ -61,10 +141,7 @@ export default async function AdminPatient({ params, searchParams }: PageProps<"
               <Link href={backTo} className="ui-btn secondary" title="กลับไปรายชื่อผู้ป่วย">‹ กลับ</Link>
               <div style={{ minWidth: 0 }}>
                 <h1 className="ui-title" style={{ fontSize: 22 }}>{p.name}</h1>
-                <p className="ui-subtitle">
-                  {p.sex} อายุ {ageFromThaiDob(p.dob)} ปี HN {p.hn ?? "ยังไม่มี"} หน่วยประจำ {p.facility ?? "ยังไม่มี"}{" "}
-                  {!p.active ? <span className="ui-badge muted">ปิดใช้งาน</span> : p.status === "pending" ? <span className="ui-badge warn">รอยืนยันตัวตน</span> : <span className="ui-badge ok">ยืนยันแล้ว</span>}
-                </p>
+                <p className="ui-subtitle pa-sub">{p.sex} อายุ {ageFromThaiDob(p.dob)} ปี {status}</p>
               </div>
             </div>
             <Link href={`/hospital/patients/${p.id}`} className="ui-btn secondary">ดูมุมมองแพทย์</Link>
@@ -73,138 +150,88 @@ export default async function AdminPatient({ params, searchParams }: PageProps<"
         {ok && <div className="flash">{ok}</div>}
         {err && <div className="flash bad">{err}</div>}
 
-        <div className="card pad">
-          <div className="sec-title">วันและเวลา</div>
-          <ul className="timeline">
-            <li><b>{thaiDateTime(p.registeredAt)}</b><span>ลงทะเบียนในระบบโดย {p.createdBy.displayName}</span></li>
-            {p.verifiedAt && <li><b>{thaiDateTime(p.verifiedAt)}</b><span>ยืนยันตัวตนโดย {p.verifiedBy?.displayName}</span></li>}
-            <li><b>{thaiDateTime(p.updatedAt)}</b><span>ข้อมูลผู้ป่วยแก้ไขล่าสุด</span></li>
-          </ul>
+        {/* top: who the patient is (left), key dates and on/off (right) */}
+        <div className="pa-top">
+            <PatientEditCard
+              patient={{ name: p.name, cardId: p.cardId, hn: p.hn ?? "", dob: p.dob, sex: p.sex, phone: p.phone ?? "", facility: p.facility ?? "" }}
+              facilities={facilities} action={updatePatient.bind(null, p.id)} backTo={backTo}
+              serverError={editErr ? { code: String(sp.err), message: editErr } : undefined}
+              notice={p.status === "pending" && p.active ? (
+                <VerifyBox name={p.name} cardId={formatCardId(p.cardId)} checksumOk={cardIdChecksumOk(p.cardId)} hn={p.hn ?? ""}
+                  action={verifyPatient.bind(null, p.id)} backTo={backTo} serverError={verifyErr ?? undefined} />
+              ) : undefined}
+              actions={<ActiveToggle active={p.active} name={p.name} action={setPatientActive.bind(null, p.id, !p.active)} backTo={backTo} />} />
+
+            <div className="pa-side">
+            <Timeline items={timeline} />
+
+            </div>
         </div>
 
-        {p.status === "pending" && (
-          <form action={verifyPatient.bind(null, p.id)} className="card pad" style={{ display: "flex", flexDirection: "column", gap: 10, background: "var(--warn-soft)" }}>
-            {backField}
-            <div className="sec-title" style={{ margin: 0 }}>ยืนยันตัวตนผู้ป่วย</div>
-            <div className="note">ตรวจเลขประจำตัวประชาชน <b className="mono">{formatCardId(p.cardId)}</b> {cardIdChecksumOk(p.cardId) ? "(เลขหลักสุดท้ายถูกต้องตามสูตร)" : "(เลขหลักสุดท้ายไม่ตรงตามสูตร กรุณาตรวจกับระบบ รพ.)"} กับระบบของ รพ. แล้วใส่ HN</div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <input className="fld mono" id="verifyHn" name="hn" required placeholder="HN จากระบบ รพ." defaultValue={p.hn ?? ""} style={{ maxWidth: 240 }} />
-              <ConfirmSubmit mode="all" className="btn-s primary" label="ยืนยันตัวตนและบันทึก HN" title="ยืนยันตัวตนผู้ป่วย" confirmLabel="ยืนยันตัวตน"
-                note={`${p.name} เลขบัตร ${formatCardId(p.cardId)} หลังยืนยันแล้ว เจ้าหน้าที่ รพ.สต. จะเห็นสถานะผู้ป่วยเป็นยืนยันแล้ว`} />
-            </div>
-          </form>
-        )}
+        {/* below, full width: what needs doing first, then the histories */}
+        <div className="pa-main">
 
-        <details className="box">
-          <summary>แก้ไขข้อมูลผู้ป่วย หรือย้ายหน่วยบริการประจำ</summary>
-          <form action={updatePatient.bind(null, p.id)} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
-            {backField}
-            <div className="form-grid">
-              <div><label className="lbl" htmlFor="name">ชื่อ–นามสกุล</label><input className="fld" id="name" name="name" defaultValue={p.name} required /></div>
-              <div><label className="lbl" htmlFor="cardId">เลขประจำตัวประชาชน</label><input className="fld mono" id="cardId" name="cardId" defaultValue={p.cardId} required inputMode="numeric" maxLength={17} pattern="[0-9๐-๙ \-]{13,17}" title="เลขประจำตัวประชาชน 13 หลัก" /></div>
-              <div><label className="lbl" htmlFor="hn">HN</label><input className="fld mono" id="hn" name="hn" defaultValue={p.hn ?? ""} /></div>
-              <div><label className="lbl" htmlFor="dob">วันเกิด (วว/ดด/ปปปป พ.ศ.)</label><input className="fld" id="dob" name="dob" defaultValue={p.dob} required /></div>
-              <div>
-                <label className="lbl" htmlFor="sex">เพศ</label>
-                <select className="fld" id="sex" name="sex" defaultValue={p.sex}><option>หญิง</option><option>ชาย</option></select>
-              </div>
-              <div><label className="lbl" htmlFor="phone">เบอร์โทรศัพท์</label><input className="fld" id="phone" name="phone" defaultValue={p.phone ?? ""} /></div>
-              <div>
-                <label className="lbl" htmlFor="facility">หน่วยบริการประจำ</label>
-                <select className="fld" id="facility" name="facility" defaultValue={p.facility ?? ""}>
-                  <option value="">ยังไม่มี</option>
-                  {facilities.map((f) => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-            </div>
-            <div><label className="lbl" htmlFor="reason">เหตุผลที่แก้ไข *</label><input className="fld" id="reason" name="reason" required placeholder="เช่น รพ.สต. แจ้งว่าพิมพ์วันเกิดผิด / ผู้ป่วยย้ายที่อยู่" /></div>
-            <ConfirmSubmit className="btn" label="บันทึกการแก้ไข" title="ตรวจสอบการแก้ไขข้อมูลผู้ป่วย" note="ค่าเดิมจะถูกเก็บไว้ในประวัติการแก้ไข" />
-          </form>
-        </details>
-
-        <div className="card" style={{ overflowX: "auto" }}>
-          <div className="sec-title" style={{ padding: "16px 16px 0" }}>ประวัติการคัดกรองทุกหน่วยบริการ ({p.screenings.length} ครั้ง)</div>
-          <table className="grid">
-            <thead><tr><th>คัดกรองเมื่อ</th><th>หน่วยที่ตรวจ</th><th>ค่าที่วัด</th><th>ผล</th><th>สถานะ</th><th /></tr></thead>
-            <tbody>
-              {p.screenings.map((s) => (
-                <tr key={s.id}>
-                  <td className="time">{thaiDateTime(s.createdAt)}<div className="note">โดย {s.screener.displayName}</div>{s.updatedAt.getTime() - s.createdAt.getTime() > 1000 && <div className="note">แก้ไข {thaiDateTime(s.updatedAt)}</div>}</td>
-                  <td>{s.facility}</td>
-                  <td>eGFR {s.egfr} ยา {s.doseMgDay} มก./วัน BMI {s.bmi.toFixed(1)}{(s.nsaidNote || s.herbalNote) && <div className="note">ระบุ: {[s.nsaidNote, s.herbalNote].filter(Boolean).join(", ")}</div>}</td>
-                  <td><span className={`pill ${s.alertKind === "dose" ? "hi" : s.isAlert ? "warn" : "ok"}`}>{s.alertKind === "dose" ? "ใช้ยาเกินขนาด" : s.isAlert ? "เสี่ยงทั่วไป" : "ไม่แจ้งเตือน"}</span><div className="note">{s.riskScore} คะแนน เกณฑ์ {s.ruleVersion}</div></td>
-                  <td className="time">
-                    {s.confirmedAt ? `ยืนยัน ${thaiDateTime(s.confirmedAt)}` : "ยังไม่ยืนยัน"}
-                    {s.acknowledgedAt && <div>รพ. รับเรื่อง {thaiDateTime(s.acknowledgedAt)}</div>}
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <Link href={`/hospital/cases/${s.id}`} className="btn-s">ดูเคส</Link>{" "}
-                    <Link href={`/admin/patients/${p.id}?s=${s.id}&${keep}#amend`} className="btn-s">แก้ไขผล</Link>
-                  </td>
-                </tr>
-              ))}
-              {p.screenings.length === 0 && <tr><td colSpan={6} className="note" style={{ textAlign: "center", padding: 20 }}>ยังไม่เคยคัดกรอง</td></tr>}
-            </tbody>
-          </table>
-        </div>
-
-        {p.screenings.filter((s) => s.id === openScreening).map((s) => (
-          <form key={s.id} id="amend" action={amendScreening.bind(null, p.id, s.id)} className="card pad" style={{ display: "flex", flexDirection: "column", gap: 12, borderColor: "var(--acc-line)" }}>
-            {backField}
-            <div className="sec-title" style={{ margin: 0 }}>แก้ไขผลคัดกรองวันที่ {thaiDateTime(s.createdAt)} ({s.facility})</div>
-            <div className="note">ระบบจะคำนวณผลใหม่ด้วยเกณฑ์เวอร์ชันเดิม ({s.ruleVersion}) และเก็บค่าเดิมไว้ในประวัติการแก้ไข</div>
-            <div className="form-grid">
-              <div><label className="lbl" htmlFor="weightKg">น้ำหนัก (กก.)</label><input className="fld" id="weightKg" name="weightKg" type="number" step="0.1" defaultValue={s.weightKg} required /></div>
-              <div><label className="lbl" htmlFor="heightCm">ส่วนสูง (ซม.)</label><input className="fld" id="heightCm" name="heightCm" type="number" step="0.1" defaultValue={s.heightCm} required /></div>
-              <div><label className="lbl" htmlFor="egfr">eGFR</label><input className="fld" id="egfr" name="egfr" type="number" step="0.1" defaultValue={s.egfr} required /></div>
-              <div><label className="lbl" htmlFor="doseMgDay">ขนาดยา (มก./วัน)</label><input className="fld" id="doseMgDay" name="doseMgDay" type="number" step="250" defaultValue={s.doseMgDay} required /></div>
-              {([["drinksAlcohol", "ดื่มแอลกอฮอล์"], ["bingeDrinking", "ดื่มหนักในครั้งเดียว"], ["regularHeavyDrinking", "ดื่มหนักต่อเนื่อง"], ["vomiting", "อาเจียน/ท้องเสีย"], ["lowIntake", "ทานได้น้อยลง"], ["nsaid", "ยาแก้ปวด/ยาชุด"], ["herbal", "สมุนไพร/อาหารเสริม"]] as const).map(([k, l]) => (
-                <div key={k}>
-                  <label className="lbl" htmlFor={k}>{l}</label>
-                  <select className="fld" id={k} name={k} defaultValue={s[k] ? "yes" : "no"}><option value="no">ไม่ใช่</option><option value="yes">ใช่</option></select>
+            {amending && (
+              <form id="amend" action={amendScreening.bind(null, p.id, amending.id)} className="ui-card">
+                {backField}
+                <div className="ui-card-head">
+                  <div className="ui-card-title">แก้ไขผลคัดกรองวันที่ {thaiDateTime(amending.createdAt)}<span className="ui-card-count">{amending.facility}</span></div>
+                  <Link href={`/admin/patients/${p.id}?${keep}`} className="ui-link-btn">ยกเลิก</Link>
                 </div>
-              ))}
-              <div><label className="lbl" htmlFor="nsaidNote">ชื่อยาที่ระบุ</label><input className="fld" id="nsaidNote" name="nsaidNote" defaultValue={s.nsaidNote ?? ""} /></div>
-              <div><label className="lbl" htmlFor="herbalNote">สมุนไพรที่ระบุ</label><input className="fld" id="herbalNote" name="herbalNote" defaultValue={s.herbalNote ?? ""} /></div>
-            </div>
-            <div><label className="lbl" htmlFor="reason2">เหตุผลที่แก้ไข *</label><input className="fld" id="reason2" name="reason" required placeholder="เช่น รพ.สต. โทรแจ้งว่ากรอก eGFR ผิด" /></div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <ConfirmSubmit className="btn" label="บันทึกการแก้ไขผลคัดกรอง" title="ตรวจสอบการแก้ไขผลคัดกรอง" note={`ระบบจะคำนวณผลใหม่ด้วยเกณฑ์ ${s.ruleVersion} และเก็บค่าเดิมไว้ในประวัติการแก้ไข`} />
-              <Link href={`/admin/patients/${p.id}?${keep}`} className="btn-s">ยกเลิก</Link>
-            </div>
-          </form>
-        ))}
+                <div className="pa-card-body pa-form">
+                  <p className="pa-hint">ระบบจะคำนวณผลใหม่ด้วยเกณฑ์เวอร์ชันเดิม ({amending.ruleVersion}) และเก็บค่าเดิมไว้ในประวัติการแก้ไข</p>
+                  <div className="pa-grid4">
+                    <div><label className="lbl" htmlFor="weightKg">น้ำหนัก (กก.)</label><input className="fld" id="weightKg" name="weightKg" type="number" step="0.1" defaultValue={amending.weightKg} required /></div>
+                    <div><label className="lbl" htmlFor="heightCm">ส่วนสูง (ซม.)</label><input className="fld" id="heightCm" name="heightCm" type="number" step="0.1" defaultValue={amending.heightCm} required /></div>
+                    <div><label className="lbl" htmlFor="egfr">eGFR</label><input className="fld" id="egfr" name="egfr" type="number" step="0.1" defaultValue={amending.egfr} required /></div>
+                    <div><label className="lbl" htmlFor="doseMgDay">ขนาดยา (มก./วัน)</label><input className="fld" id="doseMgDay" name="doseMgDay" type="number" step="250" defaultValue={amending.doseMgDay} required /></div>
+                    {([["drinksAlcohol", "ดื่มแอลกอฮอล์"], ["bingeDrinking", "ดื่มหนักในครั้งเดียว"], ["regularHeavyDrinking", "ดื่มหนักต่อเนื่อง"], ["vomiting", "อาเจียน/ท้องเสีย"], ["lowIntake", "ทานได้น้อยลง"], ["nsaid", "ยาแก้ปวด/ยาชุด"], ["herbal", "สมุนไพร/อาหารเสริม"]] as const).map(([k, l]) => (
+                      <div key={k}>
+                        <label className="lbl" htmlFor={k}>{l}</label>
+                        <select className="fld" id={k} name={k} defaultValue={amending[k] ? "yes" : "no"}><option value="no">ไม่ใช่</option><option value="yes">ใช่</option></select>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="pa-two">
+                    <div><label className="lbl" htmlFor="nsaidNote">ชื่อยาที่ระบุ</label><input className="fld" id="nsaidNote" name="nsaidNote" defaultValue={amending.nsaidNote ?? ""} /></div>
+                    <div><label className="lbl" htmlFor="herbalNote">สมุนไพรที่ระบุ</label><input className="fld" id="herbalNote" name="herbalNote" defaultValue={amending.herbalNote ?? ""} /></div>
+                  </div>
+                  <div><label className="lbl" htmlFor="reason2">เหตุผลที่แก้ไข *</label><input className="fld" id="reason2" name="reason" required placeholder="เช่น รพ.สต. โทรแจ้งว่ากรอก eGFR ผิด" /></div>
+                  <div className="pa-inline">
+                    <ConfirmSubmit className="ui-btn primary" label="บันทึกการแก้ไขผลคัดกรอง" title="ตรวจสอบการแก้ไขผลคัดกรอง" note={`ระบบจะคำนวณผลใหม่ด้วยเกณฑ์ ${amending.ruleVersion} และเก็บค่าเดิมไว้ในประวัติการแก้ไข`} />
+                    <Link href={`/admin/patients/${p.id}?${keep}`} className="ui-btn secondary">ยกเลิก</Link>
+                  </div>
+                </div>
+              </form>
+            )}
 
-        <div className="card" style={{ overflowX: "auto" }}>
-          <div className="sec-title" style={{ padding: "16px 16px 0" }}>ประวัติการแก้ไขข้อมูล</div>
-          <table className="grid">
-            <thead><tr><th>เมื่อ</th><th>โดย</th><th>รายการ</th><th>ค่าเดิม</th><th>ค่าใหม่</th><th>เหตุผล</th></tr></thead>
-            <tbody>
-              {history.map((h) => (
-                <tr key={h.id}>
-                  <td className="time">{thaiDateTime(h.at)}</td>
-                  <td>{h.by.displayName}</td>
-                  <td>{FIELD_TH[h.field] ?? h.field}{h.entity === "Screening" && <div className="note">ผลคัดกรอง #{h.entityId}</div>}</td>
-                  <td className="note">{h.oldValue ?? "ว่าง"}</td>
-                  <td>{h.newValue ?? "ว่าง"}</td>
-                  <td>{h.reason}</td>
-                </tr>
-              ))}
-              {history.length === 0 && <tr><td colSpan={6} className="note" style={{ textAlign: "center", padding: 20 }}>ยังไม่เคยแก้ไข</td></tr>}
-            </tbody>
-          </table>
+            <Tabs tabs={[
+              {
+                label: "ประวัติการคัดกรอง", count: p.screenings.length,
+                body: (
+                  <div className="ui-table-wrap">
+                    <table className="ui-table pa-table">
+                      <colgroup><col /><col style={{ width: 170 }} /><col style={{ width: 72 }} /><col style={{ width: 84 }} /><col style={{ width: 72 }} /><col style={{ width: 150 }} /><col style={{ width: 140 }} /><col style={{ width: 176 }} /></colgroup>
+                      <thead><tr><th>คัดกรองเมื่อ</th><th>หน่วยที่ตรวจ</th><th className="num">eGFR</th><th className="num">ยา มก.</th><th className="num">BMI</th><th>ผล</th><th>สถานะเคส</th><th /></tr></thead>
+                      <FoldRows rows={screeningRows} cols={8} empty="ยังไม่เคยคัดกรอง" />
+                    </table>
+                  </div>
+                ),
+              },
+              {
+                label: "ประวัติการแก้ไขข้อมูล", count: history.length,
+                body: (
+                  <div className="ui-table-wrap">
+                    <table className="ui-table pa-table">
+                      <colgroup><col style={{ width: 210 }} /><col style={{ width: 190 }} /><col /><col style={{ width: "28%" }} /></colgroup>
+                      <thead><tr><th>เมื่อ</th><th>รายการ</th><th>ค่าเดิม → ค่าใหม่</th><th>เหตุผล</th></tr></thead>
+                      <FoldRows rows={historyRows} cols={4} empty="ยังไม่เคยแก้ไข" />
+                    </table>
+                  </div>
+                ),
+              },
+            ]} />
         </div>
-
-        <form action={setPatientActive.bind(null, p.id, !p.active)} className="card pad" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
-          {backField}
-          <div style={{ flex: 1, minWidth: 240 }}>
-            <label className="lbl" htmlFor="reason3">{p.active ? "ปิดใช้งานผู้ป่วยรายนี้ (ข้อมูลไม่ถูกลบ)" : "เปิดใช้งานผู้ป่วยรายนี้อีกครั้ง"} เหตุผล *</label>
-            <input className="fld" id="reason3" name="reason" required placeholder="เช่น ลงทะเบียนซ้ำ / ผู้ป่วยเสียชีวิต" />
-          </div>
-          <ConfirmSubmit mode="all" className={`btn-s${p.active ? "" : " primary"}`} label={p.active ? "ปิดใช้งาน" : "เปิดใช้งาน"}
-            title={p.active ? "ปิดใช้งานผู้ป่วยรายนี้" : "เปิดใช้งานผู้ป่วยรายนี้"} confirmLabel={p.active ? "ยืนยันปิดใช้งาน" : "ยืนยันเปิดใช้งาน"}
-            note={p.active ? `${p.name} จะไม่แสดงในรายชื่อของ รพ.สต. ข้อมูลไม่ถูกลบ และเปิดใช้งานกลับได้` : `${p.name} จะกลับมาแสดงในรายชื่อของ รพ.สต.`} />
-        </form>
       </main>
     </>
   );

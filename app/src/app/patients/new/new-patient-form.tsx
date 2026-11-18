@@ -5,7 +5,7 @@ import { startTransition, useActionState, useState, type FormEvent } from "react
 import { DobPicker } from "@/components/dob-picker";
 import { UnsavedGuard } from "@/components/leave-guard";
 import { Modal } from "@/components/ui/modal";
-import { THAI_MONTHS_FULL, ageFromThaiDob, cardIdChecksumOk, nameProblem, normalizeCardId } from "@/lib/format";
+import { LIMITS, THAI_MONTHS_FULL, ageFromThaiDob, cardIdChecksumOk, nameProblem, normalizeCardId, phoneDigits, phoneProblem, typePhone } from "@/lib/format";
 import { createPatient } from "./actions";
 
 // Keeps only digits (Thai digits become 0 to 9), at most 13 of them, and shows them grouped
@@ -23,6 +23,7 @@ export function NewPatientForm({ facility }: { facility: string }) {
   const [name, setName] = useState("");
   const nameErr0 = nameProblem(name) ?? e?.name?.[0];
   const [cardId, setCardId] = useState("");
+  const [phone, setPhone] = useState("");
   const digits = normalizeCardId(cardId);
   // The check digit is only a warning: the hospital's own test IDs fail it on purpose.
   const cardWarn = digits.length === 13 && !cardIdChecksumOk(digits) ? "เลขหลักสุดท้ายไม่ตรงตามสูตรเลขบัตรประชาชน กรุณาตรวจสอบอีกครั้ง (บันทึกได้)" : null;
@@ -43,6 +44,10 @@ export function NewPatientForm({ facility }: { facility: string }) {
   const LABELS = { cardId: "เลขประจำตัวประชาชน", name: "ชื่อ–นามสกุล", dob: "วันเกิด" } as const;
   const empty = (Object.keys(missing) as (keyof typeof missing)[]).filter((k) => missing[k]);
   const show = tried ? missing : { cardId: null, name: null, dob: null };
+  // phone is optional, but if given it must be a real Thai number (9 or 10 digits from 0);
+  // marked once it is long enough to judge, or when "save" is pressed
+  const phoneErr = phoneProblem(phone) ?? e?.phone?.[0] ?? null;
+  const phoneShown = phoneErr && (tried || phoneDigits(phone).length >= 10 || /[^0-9-]/.test(phone)) ? phoneErr : null;
 
   function onSubmit(ev: FormEvent<HTMLFormElement>) {
     if (empty.length > 0) {
@@ -50,6 +55,12 @@ export function NewPatientForm({ facility }: { facility: string }) {
       setTried(true);
       const first = empty[0];
       ev.currentTarget.querySelector<HTMLElement>(first === "dob" ? ".dob-day" : `#${first}`)?.focus();
+      return;
+    }
+    if (phoneProblem(phone)) {
+      ev.preventDefault();
+      setTried(true);
+      ev.currentTarget.querySelector<HTMLElement>("#phone")?.focus();
       return;
     }
     // Everything is filled: show the review popup first. Staff cannot change a patient's details
@@ -84,7 +95,7 @@ export function NewPatientForm({ facility }: { facility: string }) {
           </div>
           <div className="ui-field">
             <label htmlFor="name">ชื่อ–นามสกุล *</label>
-            <input className={`fld${nameProblem(name) || show.name ? " bad" : ""}`} id="name" name="name" required
+            <input className={`fld${nameProblem(name) || show.name ? " bad" : ""}`} id="name" name="name" required maxLength={LIMITS.name}
               value={name} onChange={(ev) => setName(ev.target.value)} aria-invalid={!!(show.name || nameErr0)} />
             {(show.name || nameErr0) && <div className="err">{show.name || nameErr0}</div>}
           </div>
@@ -100,7 +111,9 @@ export function NewPatientForm({ facility }: { facility: string }) {
           </div>
           <div className="ui-field">
             <label htmlFor="phone">เบอร์โทรศัพท์</label>
-            <input className="fld" id="phone" name="phone" inputMode="tel" maxLength={20} autoComplete="off" placeholder="ถ้ามี" />
+            <input className={`fld mono${phoneShown ? " bad" : ""}`} id="phone" name="phone" inputMode="tel" maxLength={LIMITS.phone} autoComplete="off" placeholder="ถ้ามี"
+              value={phone} onChange={(ev) => setPhone(typePhone(ev.target.value))} aria-invalid={!!phoneShown} />
+            {phoneShown && <div className="err">{phoneShown}</div>}
           </div>
           <div className="ui-field">
             <label htmlFor="facility">หน่วยบริการประจำ</label>

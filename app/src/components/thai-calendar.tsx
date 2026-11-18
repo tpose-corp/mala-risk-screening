@@ -16,12 +16,13 @@ export function ThaiCalendar(props: {
   onPick: (p: Picked) => void;
   onClose: () => void;
   label?: string;
+  downOnly?: boolean; // always open below the field (e.g. under a sticky page head), scrolling into view if needed
 }) {
   const today = new Date();
   const thisYearBE = today.getFullYear() + 543;
   const [view, setView] = useState(props.initial);
   const boxRef = useRef<HTMLDivElement>(null);
-  const { onClose } = props;
+  const { onClose, downOnly } = props;
 
   // Close on Escape or on a click outside the calendar.
   useEffect(() => {
@@ -50,11 +51,21 @@ export function ThaiCalendar(props: {
     const bar = Array.from(document.querySelectorAll<HTMLElement>(".ui-form-actions, .ui-savebar"))
       .map((el) => el.getBoundingClientRect().top).filter((t) => t > f.bottom && t < window.innerHeight);
     const bottomLimit = bar.length ? Math.min(...bar) : window.innerHeight;
-    const topLimit = 64 + (document.querySelector(".ui-steps") ? 44 : 0); // under the sticky header (and step bar)
+    // Nothing may hide it at the top: the top bar, the step bar, and a sticky page head (.ui-sticky,
+    // e.g. the admin patient page) all count, whichever reaches lowest.
+    const stuck = Array.from(document.querySelectorAll<HTMLElement>(".ui-sticky, .ui-steps"))
+      .map((el) => el.getBoundingClientRect()).filter((r) => r.top < f.top && r.bottom > 0).map((r) => r.bottom);
+    const topLimit = Math.max(64, ...stuck) + 8;
+    // Not enough room either way: open below and scroll the page up just enough to show it whole.
+    const scrollToFitBelow = () => {
+      const need = f.bottom + h + 8 - bottomLimit;
+      if (need > 0) window.scrollBy({ top: need, behavior: "smooth" });
+    };
+    if (downOnly) { scrollToFitBelow(); return; }
     if (f.bottom + h <= bottomLimit) setUp(false);
     else if (f.top - h >= topLimit) setUp(true);
-    else box.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, []);
+    else scrollToFitBelow();
+  }, [downOnly]);
 
   const { month, yearBE } = view;
   const firstWeekday = new Date(yearBE - 543, month - 1, 1).getDay(); // 0 = Sunday

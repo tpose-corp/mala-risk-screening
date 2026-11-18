@@ -4,6 +4,7 @@
 // so the file can be checked against the database. Admin only, and the download itself is logged.
 import type { NextRequest } from "next/server";
 import { audit } from "@/lib/audit";
+import { auditTargetNames } from "@/lib/audit-names";
 import { auditQuery, auditWhere, readAuditFilters } from "@/lib/audit-filters";
 import { describeRow } from "@/lib/audit-text";
 import { db } from "@/lib/db";
@@ -21,12 +22,14 @@ export async function GET(request: NextRequest) {
   }
 
   const f = readAuditFilters(Object.fromEntries(request.nextUrl.searchParams));
-  const rows = await db.auditLog.findMany({ where: auditWhere(f), orderBy: { id: "asc" } });
   const users = await db.user.findMany();
-  await audit({ user, action: "audit.export", detail: `rows=${rows.length} filters=${auditQuery(f) || "none"}` });
+  const rows = await db.auditLog.findMany({ where: auditWhere(f, users), orderBy: { id: "asc" } });
+  // the search text itself is not stored in the log (it could be anything typed), only that one was used
+  await audit({ user, action: "audit.export", detail: `rows=${rows.length} filters=${auditQuery(f.q ? { ...f, q: "*" } : f) || "none"}` });
 
+  const names = await auditTargetNames(rows);
   const body = rows.map((r) => {
-    const d = describeRow(r, users);
+    const d = describeRow(r, users, names);
     const local = r.at.toLocaleString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" });
     return [String(r.id), local, r.at.toISOString(), d.who, d.whoNote, r.username ?? "", d.facility, d.device, d.what, d.target, d.detail, r.action];
   });

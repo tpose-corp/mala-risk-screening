@@ -8,14 +8,15 @@ import { ROLE_LABEL } from "./format";
 // than this, and must check first whether a longer legal hold applies.
 export const AUDIT_RETENTION_DAYS = 90;
 
-export type Category = "auth" | "patient" | "screening" | "hospital" | "admin" | "db";
+export type Category = "auth" | "patient" | "screening" | "hospital" | "admin" | "adminview" | "db";
 
 export const CATEGORY_LABEL: Record<Category, string> = {
   auth: "เข้าและออกจากระบบ",
   patient: "ข้อมูลผู้ป่วย",
   screening: "การคัดกรอง",
   hospital: "โรงพยาบาลแม่ข่าย",
-  admin: "บันทึกการใช้งาน",
+  admin: "งานของผู้ดูแลระบบ (เพิ่ม แก้ไข ปิด)",
+  adminview: "ผู้ดูแลระบบเปิดดูหน้าและดาวน์โหลด",
   db: "แก้ไขข้อมูลนอกหน้าเว็บ",
 };
 
@@ -44,9 +45,9 @@ const ACTIONS: Record<string, { label: string; category: Category; warn?: boolea
   "hospital.export.csv": { label: "ดาวน์โหลดไฟล์ CSV", category: "hospital" },
   "hospital.export.denied": { label: "ดาวน์โหลดไฟล์ CSV โดยไม่มีสิทธิ์ ระบบไม่ให้ดาวน์โหลด", category: "hospital", warn: true },
   "alert.acknowledge": { label: "รับเรื่องเคสแจ้งเตือน", category: "hospital" },
-  "audit.view": { label: "เปิดบันทึกการใช้งาน", category: "admin" },
-  "audit.export": { label: "ดาวน์โหลดบันทึกการใช้งาน", category: "admin" },
-  "audit.view.denied": { label: "เปิดบันทึกการใช้งานโดยไม่มีสิทธิ์ ระบบไม่ให้เข้า", category: "admin", warn: true },
+  "audit.view": { label: "เปิดบันทึกการใช้งาน", category: "adminview" },
+  "audit.export": { label: "ดาวน์โหลดบันทึกการใช้งาน", category: "adminview" },
+  "audit.view.denied": { label: "เปิดบันทึกการใช้งานโดยไม่มีสิทธิ์ ระบบไม่ให้เข้า", category: "adminview", warn: true },
   // v2 (17 Nov 2026): admin back office, clinician follow-up, edit lock, criteria, settings, manuals
   "patient.duplicate.blocked": { label: "เพิ่มผู้ป่วยซ้ำกับหน่วยอื่น ระบบแนะนำให้ไปหน่วยเดิม", category: "patient", warn: true },
   "patient.duplicate.found": { label: "เพิ่มผู้ป่วยที่มีอยู่แล้ว ระบบพาไปหน้าผู้ป่วยเดิม", category: "patient" },
@@ -55,7 +56,7 @@ const ACTIONS: Record<string, { label: string; category: Category; warn?: boolea
   "screening.edit.locked": { label: "พยายามแก้ผลคัดกรองที่ยืนยันแล้ว ระบบไม่ให้แก้", category: "screening", warn: true },
   "followup.save": { label: "บันทึกการดำเนินการของแพทย์/พยาบาล", category: "hospital" },
   "followup.add": { label: "เพิ่มบันทึกการดำเนินการของแพทย์/พยาบาล", category: "hospital" },
-  "admin.dashboard.view": { label: "เปิดภาพรวมระบบ", category: "admin" },
+  "admin.dashboard.view": { label: "เปิดภาพรวมระบบ", category: "adminview" },
   "admin.user.create": { label: "สร้างบัญชีผู้ใช้", category: "admin" },
   "admin.user.update": { label: "แก้ไขบัญชีผู้ใช้", category: "admin" },
   "admin.user.reset": { label: "ตั้งรหัสผ่านชั่วคราวใหม่", category: "admin" },
@@ -74,6 +75,7 @@ const ACTIONS: Record<string, { label: string; category: Category; warn?: boolea
   "admin.manual.remove": { label: "ซ่อนคู่มือ", category: "admin" },
   "manual.download": { label: "เปิดคู่มือ", category: "patient" },
   "account.password.change": { label: "เปลี่ยนรหัสผ่าน", category: "auth" },
+  "account.password.failed": { label: "เปลี่ยนรหัสผ่านไม่สำเร็จ (รหัสผ่านปัจจุบันไม่ถูกต้อง)", category: "auth", warn: true },
   "login.inactive": { label: "บัญชีที่ถูกปิดพยายามเข้าสู่ระบบ", category: "auth", warn: true },
   // Written by database triggers (migration audit_triggers) for changes made outside the app.
   "db.user.insert": { label: "สร้างบัญชีผู้ใช้", category: "db", warn: true },
@@ -101,25 +103,38 @@ export function actionsIn(category: string): string[] {
   return Object.entries(ACTIONS).filter(([, a]) => a.category === category).map(([code]) => code);
 }
 
+// action codes whose Thai label contains the search text (for the audit log search box)
+export function actionsMatching(q: string): string[] {
+  const t = q.trim().toLowerCase();
+  return t ? Object.entries(ACTIONS).filter(([code, a]) => a.label.toLowerCase().includes(t) || code.includes(t)).map(([code]) => code) : [];
+}
+
 export const WARN_ACTIONS = Object.entries(ACTIONS).filter(([, a]) => a.warn).map(([code]) => code);
 
 export const isDbChange = (action: string) => action.startsWith("db.");
 
-export function describeTarget(entity: string | null, id: number | null): string {
+// names: what the page looked up for this row's record ("User:18" → "test.popup"), so the log
+// says WHICH account / unit / criteria version / manual. Patients and screenings stay numbers
+// only: the log never holds patient names (rule.md, PDPA).
+export type TargetNames = Record<string, string>;
+export function describeTarget(entity: string | null, id: number | null, names: TargetNames = {}): string {
   if (!entity || id === null) return "";
+  const n = names[`${entity}:${id}`];
   if (entity === "Screening") return `เคสคัดกรอง #${id}`;
   if (entity === "Patient") return `ผู้ป่วย #${id}`;
-  if (entity === "User") return `บัญชีผู้ใช้ #${id}`;
-  if (entity === "Facility") return `หน่วยบริการ #${id}`;
-  if (entity === "RuleSet") return `เกณฑ์ #${id}`;
-  if (entity === "Manual") return `คู่มือ #${id}`;
+  if (entity === "User") return n ? `บัญชีผู้ใช้ ${n}` : `บัญชีผู้ใช้ #${id}`;
+  if (entity === "Facility") return n ? `หน่วยบริการ ${n}` : `หน่วยบริการ #${id}`;
+  if (entity === "RuleSet") return n ? `เกณฑ์ ${n}` : `เกณฑ์ #${id}`;
+  if (entity === "Manual") return n ? `คู่มือ "${n}"` : `คู่มือ #${id}`;
   return `${entity} #${id}`;
 }
 
 const PERIOD_TH: Record<string, string> = { today: "วันนี้", "7d": "7 วัน", "30d": "30 วัน" };
 const RESULT_TH: Record<string, string> = { alert: "แจ้งเตือน", noalert: "ไม่แจ้งเตือน" };
 const FIELD_TH: Record<string, string> = {
-  username: "ชื่อผู้ใช้", displayName: "ชื่อที่แสดง", role: "ตำแหน่ง", facility: "หน่วยบริการ", password: "รหัสผ่าน",
+  username: "ชื่อผู้ใช้", displayName: "ชื่อ–นามสกุล", role: "บทบาท", facility: "หน่วยบริการ", password: "รหัสผ่าน",
+  position: "ตำแหน่ง", licenseNo: "เลขใบประกอบวิชาชีพ", phone: "เบอร์โทร", cardId: "เลขประจำตัวประชาชน",
+  pcuEnabled: "การเข้าใช้ของ รพ.สต.", clinicianEnabled: "การเข้าใช้ของแพทย์และพยาบาล", closedMessage: "ข้อความเมื่อปิดระบบ", adminContact: "ช่องทางติดต่อผู้ดูแลระบบ",
   name: "ชื่อ", dob: "วันเกิด", sex: "เพศ", hn: "HN", createdById: "ผู้เพิ่ม",
   patientId: "ผู้ป่วย", screenerId: "ผู้คัดกรอง", weightKg: "น้ำหนัก", heightCm: "ส่วนสูง", egfr: "eGFR", doseMgDay: "ขนาดยา",
   alcohol: "การดื่ม", drinksAlcohol: "การดื่ม", bingeDrinking: "การดื่ม", regularHeavyDrinking: "การดื่ม",
@@ -127,6 +142,7 @@ const FIELD_TH: Record<string, string> = {
   bmi: "BMI", maxDoseMgDay: "ขนาดยาสูงสุด", doseCheck: "ผลตรวจขนาดยา", scoreEgfr: "คะแนน", scoreBmi: "คะแนน", scoreAlcohol: "คะแนน",
   riskScore: "คะแนน", isAlert: "ผลแจ้งเตือน", alertRaisedAt: "เวลาแจ้งเตือน", createdAt: "วันที่สร้าง",
   confirmedAt: "การยืนยันปิดเคส", confirmedById: "ผู้ยืนยัน", confirmNote: "บันทึกตอนยืนยัน",
+  code: "รหัสหน่วยบริการ", active: "สถานะเปิดหรือปิด",
 };
 const role = (r: string) => ROLE_LABEL[r] ?? r;
 
@@ -148,16 +164,24 @@ export function describeDetail(action: string, detail: string | null): string {
   if (kv.page !== undefined) parts.push(`หน้า ${kv.page}`);
   if (kv.patientId !== undefined) parts.push(`ของผู้ป่วย #${kv.patientId}`);
   if (kv.screenings !== undefined) parts.push(`คัดกรองมาแล้ว ${kv.screenings} ครั้ง`);
-  if (kv.ruleVersion !== undefined) parts.push(`เกณฑ์ ${kv.ruleVersion}`);
+  // a criteria save already names its version in the target column
+  if (kv.ruleVersion !== undefined && action !== "admin.criteria.update") parts.push(`เกณฑ์ ${kv.ruleVersion}`);
   if (kv.username !== undefined) parts.push(`ชื่อผู้ใช้ ${kv.username}`);
   if (kv.role !== undefined) {
     const [from, to] = kv.role.split(">");
-    parts.push(to ? `ตำแหน่ง ${role(from)} เป็น ${role(to)}` : `ตำแหน่ง ${role(from)}`);
+    parts.push(to ? `บทบาท ${role(from)} เป็น ${role(to)}` : `บทบาท ${role(from)}`);
   }
-  if (kv.changed !== undefined) {
-    const fields = [...new Set(kv.changed.split(",").map((f) => FIELD_TH[f] ?? f))].filter((f) => !(kv.role && f === "ตำแหน่ง"));
+  // closing / reopening a unit (admin.facility.update): active=false patients=N users=N disabled=N
+  if (kv.active === "false") parts.push("ปิดหน่วย");
+  if (kv.active === "true") parts.push("เปิดหน่วยอีกครั้ง");
+  if (kv.patients !== undefined && kv.patients !== "0") parts.push(`ย้ายผู้ป่วย ${kv.patients} คน`);
+  if (kv.users !== undefined && kv.users !== "0") parts.push(`ย้ายบัญชี ${kv.users} บัญชี`);
+  if (kv.disabled !== undefined && kv.disabled !== "0") parts.push(`ปิดบัญชี ${kv.disabled} บัญชี`);
+  if (kv.changed !== undefined && kv.changed !== "none") {
+    const fields = [...new Set(kv.changed.split(",").map((f) => FIELD_TH[f] ?? f))].filter((f) => !(kv.role && f === "บทบาท"));
     if (fields.length) parts.push(`เปลี่ยน${fields.join(", ")}`);
   }
+  if (kv.changed === "none") parts.push("ไม่มีค่าที่เปลี่ยน");
   if (filters && filters !== "none") {
     const u = new URLSearchParams(filters.replace(/^\?/, ""));
     const f = [u.get("q") && "ค้นหาด้วยคำค้น", u.get("fac"), u.get("result") && RESULT_TH[u.get("result")!], u.get("period") && PERIOD_TH[u.get("period")!],
@@ -170,7 +194,7 @@ export function describeDetail(action: string, detail: string | null): string {
   } else if (filters === "none") {
     parts.push("ทั้งหมด");
   }
-  return parts.length ? parts.join(" ") : detail;
+  return parts.length ? parts.join(" ") : action === "admin.criteria.update" ? "" : detail;
 }
 
 // "Mozilla/5.0 (Windows NT 10.0; ...) Chrome/131 ..." → "Chrome บน Windows"
@@ -192,12 +216,14 @@ export function retentionStatus(oldest: Date | null, now = new Date()) {
 // Collapse runs of the same person doing exactly the same thing to the same record (e.g. the
 // inbox auto-refreshing every 10 s) into one line. Rows must be newest first. Rows that failed,
 // were refused, or changed data outside the app are never merged, and the detail must match too,
-// so nothing worth noticing can hide inside a "×N". Nothing is deleted; display only.
+// so nothing worth noticing can hide inside a "×N". Only looking at pages merges (".view"
+// actions): every save, change or download keeps its own line, even when two look alike.
+// Nothing is deleted; display only.
 export function collapse<T extends { userId: number | null; username: string | null; action: string; entity: string | null; entityId: number | null; detail?: string | null; at: Date }>(rows: T[]) {
   const out: { row: T; count: number; firstAt: Date }[] = [];
   for (const row of rows) {
     const last = out[out.length - 1];
-    if (last && !describeAction(row.action).warn && last.row.userId === row.userId && last.row.username === row.username
+    if (last && !describeAction(row.action).warn && row.action.endsWith(".view") && last.row.userId === row.userId && last.row.username === row.username
       && last.row.action === row.action && last.row.entity === row.entity && last.row.entityId === row.entityId
       && (last.row.detail ?? null) === (row.detail ?? null)) {
       last.count++;
@@ -213,9 +239,9 @@ type AuditUser = { id: number; username: string; displayName: string; role: stri
 type AuditRow = { userId: number | null; username: string | null; action: string; entity: string | null; entityId: number | null; detail: string | null; device: string | null };
 
 // One row as people read it, shared by the page and the CSV download so both always agree.
-export function describeRow(r: AuditRow, users: AuditUser[]) {
+export function describeRow(r: AuditRow, users: AuditUser[], names: TargetNames = {}) {
   const a = describeAction(r.action);
-  const base = { what: a.label, warn: !!a.warn, target: describeTarget(r.entity, r.entityId), detail: describeDetail(r.action, r.detail), device: r.device ?? "" };
+  const base = { what: a.label, warn: !!a.warn, target: describeTarget(r.entity, r.entityId, names), detail: describeDetail(r.action, r.detail), device: r.device ?? "" };
   if (isDbChange(r.action)) {
     return { ...base, who: "ไม่ผ่านหน้าเว็บ", whoNote: "แก้ที่ฐานข้อมูลโดยตรงหรือสคริปต์ตั้งค่าระบบ", facility: "" };
   }

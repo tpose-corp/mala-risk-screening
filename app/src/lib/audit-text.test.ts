@@ -29,9 +29,10 @@ describe("describeAction / describeTarget", () => {
   it("failures are flagged", () => {
     expect(describeAction("login.failed").warn).toBe(true);
     expect(describeAction("login.success").warn).toBeUndefined();
+    expect(describeAction("account.password.failed").warn).toBe(true);
   });
   it("unknown code falls back to itself", () => expect(describeAction("x.y").label).toBe("x.y"));
-  it("categories", () => expect(actionsIn("auth")).toEqual(["login.success", "login.failed", "logout", "logout.idle", "login.locked", "access.denied", "record.denied", "account.password.change", "login.inactive"]));
+  it("categories", () => expect(actionsIn("auth")).toEqual(["login.success", "login.failed", "logout", "logout.idle", "login.locked", "access.denied", "record.denied", "account.password.change", "account.password.failed", "login.inactive"]));
   it("targets", () => {
     expect(describeTarget("Screening", 5)).toBe("เคสคัดกรอง #5");
     expect(describeTarget("Patient", 3)).toBe("ผู้ป่วย #3");
@@ -58,9 +59,9 @@ describe("describeDetail", () => {
     expect(describeDetail("login.failed", "account=exists")).toBe("รหัสผ่านไม่ถูกต้อง");
   });
   it("account and record changes made in the database", () => {
-    expect(describeDetail("db.user.update", "role=pcu>admin changed=role")).toBe("ตำแหน่ง เจ้าหน้าที่ รพ.สต. เป็น ผู้ดูแลระบบ (รพ.)");
+    expect(describeDetail("db.user.update", "role=pcu>admin changed=role")).toBe("บทบาท เจ้าหน้าที่ รพ.สต. เป็น ผู้ดูแลระบบ (รพ.)");
     expect(describeDetail("db.user.update", "changed=password")).toBe("เปลี่ยนรหัสผ่าน");
-    expect(describeDetail("admin.user.create", "username=temp role=pcu")).toBe("ชื่อผู้ใช้ temp ตำแหน่ง เจ้าหน้าที่ รพ.สต.");
+    expect(describeDetail("admin.user.create", "username=temp role=pcu")).toBe("ชื่อผู้ใช้ temp บทบาท เจ้าหน้าที่ รพ.สต.");
     expect(describeDetail("db.screening.update", "changed=egfr,riskScore,scoreEgfr")).toBe("เปลี่ยนeGFR, คะแนน");
   });
   it("nothing to add", () => {
@@ -84,6 +85,31 @@ describe("retention (CCA §26)", () => {
     expect(retentionStatus(new Date("2026-10-07T00:00:00Z"), now)).toEqual({ days: 85, full: false });
     expect(retentionStatus(new Date("2026-10-01T00:00:00Z"), now)).toEqual({ days: 91, full: true });
     expect(retentionStatus(null, now)).toEqual({ days: 0, full: false });
+  });
+});
+
+describe("admin changes read clearly", () => {
+  it("closing a unit says what moved", () =>
+    expect(describeDetail("admin.facility.update", "active=false patients=12 users=2 disabled=0")).toBe("ปิดหน่วย ย้ายผู้ป่วย 12 คน ย้ายบัญชี 2 บัญชี"));
+  it("reopening a unit", () => expect(describeDetail("admin.facility.update", "active=true")).toBe("เปิดหน่วยอีกครั้ง"));
+  it("settings and account fields are in Thai", () => {
+    expect(describeDetail("admin.settings.update", "changed=pcuEnabled,adminContact")).toBe("เปลี่ยนการเข้าใช้ของ รพ.สต., ช่องทางติดต่อผู้ดูแลระบบ");
+    expect(describeDetail("admin.user.update", "changed=position,phone")).toBe("เปลี่ยนตำแหน่ง, เบอร์โทร");
+    expect(describeDetail("admin.user.update", "changed=none")).toBe("ไม่มีค่าที่เปลี่ยน");
+  });
+  it("targets use the looked-up name, patients stay a number", () => {
+    const names = { "Facility:9": "รพ.สต.บ้านดู่", "User:18": "somsri", "RuleSet:2": "v3-2026-11-18", "Manual:1": "คู่มือ รพ.สต.", "Patient:5": "ห้ามแสดง" };
+    expect(describeTarget("Facility", 9, names)).toBe("หน่วยบริการ รพ.สต.บ้านดู่");
+    expect(describeTarget("User", 18, names)).toBe("บัญชีผู้ใช้ somsri");
+    expect(describeTarget("RuleSet", 2, names)).toBe("เกณฑ์ v3-2026-11-18");
+    expect(describeTarget("Manual", 1, names)).toBe('คู่มือ "คู่มือ รพ.สต."');
+    expect(describeTarget("Patient", 5, names)).toBe("ผู้ป่วย #5");
+    expect(describeTarget("Facility", 10, names)).toBe("หน่วยบริการ #10");
+  });
+  it("admin changes and admin page views are separate categories", () => {
+    expect(actionsIn("admin")).toContain("admin.facility.update");
+    expect(actionsIn("admin")).not.toContain("admin.dashboard.view");
+    expect(actionsIn("adminview")).toEqual(expect.arrayContaining(["admin.dashboard.view", "audit.view", "audit.export"]));
   });
 });
 
@@ -122,6 +148,10 @@ describe("collapse never hides what matters", () => {
       { id: 1, userId: null, username: null, action: "db.user.update", entity: "User", entityId: 4, detail: "role=nurse>admin changed=role", at: at(0) },
     ];
     expect(collapse(rows)).toHaveLength(2);
+  });
+  it("two saves that look alike stay two lines (only page views merge)", () => {
+    const save = (id: number, m: number) => ({ id, userId: 1, username: "admin", action: "admin.settings.update", entity: null, entityId: null, detail: "changed=pcuEnabled", at: at(m) });
+    expect(collapse([save(2, 13), save(1, 0)])).toHaveLength(2);
   });
   it("repeated failures stay separate lines", () => {
     const f = (id: number, m: number) => ({ id, userId: null, username: "somsri", action: "login.failed", entity: null, entityId: null, detail: "account=exists", at: at(m) });

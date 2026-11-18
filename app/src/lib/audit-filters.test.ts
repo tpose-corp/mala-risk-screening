@@ -4,15 +4,15 @@ import { auditQuery, auditWhere, hasAuditFilters, readAuditFilters } from "./aud
 
 describe("readAuditFilters", () => {
   it("defaults", () => {
-    expect(readAuditFilters({})).toEqual({ who: "", cat: "", from: "", to: "", warn: false });
+    expect(readAuditFilters({})).toEqual({ q: "", cat: "", from: "", to: "", warn: false });
   });
   it("ignores junk", () => {
     expect(readAuditFilters({ cat: "x", from: "2026-13-45", to: "yesterday", warn: "yes" }))
-      .toEqual({ who: "", cat: "", from: "", to: "", warn: false });
+      .toEqual({ q: "", cat: "", from: "", to: "", warn: false });
   });
   it("reads valid values", () => {
-    expect(readAuditFilters({ who: "somsri", cat: "db", from: "2026-09-01", to: "2026-09-30", warn: "1" }))
-      .toEqual({ who: "somsri", cat: "db", from: "2026-09-01", to: "2026-09-30", warn: true });
+    expect(readAuditFilters({ q: "somsri", cat: "db", from: "2026-09-01", to: "2026-09-30", warn: "1" }))
+      .toEqual({ q: "somsri", cat: "db", from: "2026-09-01", to: "2026-09-30", warn: true });
   });
 });
 
@@ -25,10 +25,22 @@ describe("auditWhere", () => {
   });
 });
 
+describe("search box", () => {
+  const users = [{ id: 7, username: "somsri", displayName: "สมศรี ใจดี", role: "pcu", facility: "รพ.สต.บ้านดู่" }];
+  type Or = { OR: Record<string, unknown>[] };
+  const or = (q: string) => ((auditWhere(readAuditFilters({ q }), users) as { AND: Or[] }).AND[0]).OR;
+  it("a unit name finds its staff", () => expect(or("บ้านดู่")).toContainEqual({ userId: { in: [7] } }));
+  it("a Thai action word finds the action codes", () =>
+    expect(or("เข้าสู่ระบบ")).toContainEqual(expect.objectContaining({ action: { in: expect.arrayContaining(["login.success", "login.failed"]) } })));
+  it("a case number finds the record", () => expect(or("#2591")).toContainEqual({ entityId: 2591 }));
+  it("dates picked backwards are swapped", () =>
+    expect(readAuditFilters({ from: "2026-10-05", to: "2026-10-01" })).toMatchObject({ from: "2026-10-01", to: "2026-10-05" }));
+});
+
 describe("auditQuery / hasAuditFilters", () => {
   it("round-trips", () => {
-    const f = readAuditFilters({ who: "doctor", from: "2026-10-01", warn: "1" });
-    expect(auditQuery(f, { page: 2 })).toBe("?who=doctor&from=2026-10-01&warn=1&page=2");
+    const f = readAuditFilters({ q: "doctor", from: "2026-10-01", warn: "1" });
+    expect(auditQuery(f, { page: 2 })).toBe("?q=doctor&from=2026-10-01&warn=1&page=2");
     expect(readAuditFilters(Object.fromEntries(new URLSearchParams(auditQuery(f))))).toEqual(f);
     expect(hasAuditFilters(f)).toBe(true);
     expect(auditQuery(readAuditFilters({}))).toBe("");
