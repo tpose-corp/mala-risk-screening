@@ -1,6 +1,6 @@
 // Date-of-birth helpers used by the Add Patient form (PBI-04). Run with: npm test
 import { describe, expect, it } from "vitest";
-import { LIMITS, ageFromThaiDob, daysInMonth, dobProblem, formatPhone, hnProblem, isValidThaiDob, licenseNoProblem, nameProblem, normalizeHn, phoneProblem, typePhone } from "./format";
+import { LIMITS, ageFromThaiDob, daysInMonth, dobProblem, formatPhone, hnProblem, isValidThaiDob, licenseNoProblem, nameProblem, normalizeHn, phoneProblem, typeLicenseNo, typePhone } from "./format";
 
 const today = new Date(2026, 9, 7); // 7 ต.ค. 2569
 
@@ -89,8 +89,11 @@ describe("field limits (18 Nov 2026)", () => {
     expect(hnProblem("1".repeat(LIMITS.hn))).toBeNull();
     expect(hnProblem("1".repeat(LIMITS.hn + 1))).toContain("ยาวเกิน");
     expect(nameProblem("ก".repeat(LIMITS.name + 1))).toContain("ยาวเกิน");
-    expect(licenseNoProblem("ว.12345")).toBeNull();
-    expect(licenseNoProblem("ว.12345@")).toBe("ใช้ได้เฉพาะตัวอักษร ตัวเลข จุด และขีด");
-    expect(licenseNoProblem("1".repeat(21))).toContain("ยาวเกิน");
+    expect(licenseNoProblem("12345")).toBeNull();
+    expect(licenseNoProblem("4511234567")).toBeNull();
+    expect(licenseNoProblem("ว.12345")).toBe("เลขใบประกอบวิชาชีพใช้ได้เฉพาะตัวเลข");
+    expect(licenseNoProblem("1".repeat(11))).toContain("ยาวเกิน");
+    expect(typeLicenseNo("ว.๑๒๓๔๕")).toBe("12345");
+    expect(typeLicenseNo("123456789012")).toBe("1234567890");
   });
 });

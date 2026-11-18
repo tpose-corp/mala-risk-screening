@@ -43,8 +43,8 @@ async function main() {
     db.user.create({ data: { username, passwordHash: pw, displayName, role, facility, position, licenseNo, mustChangePassword: false } });
 
   const admin = await mk("admin", "ผู้ดูแลระบบ ศูนย์ข้อมูลยา", "admin", null, "เภสัชกร");
-  await mk("doctor", "นพ. กิตติ ใจงาม", "clinician", null, "แพทย์", "ว.00000");
-  await mk("nurse", "พว. วรรณา ดูแลดี", "clinician", null, "พยาบาลวิชาชีพ", "พ.00000");
+  await mk("doctor", "นพ. กิตติ ใจงาม", "clinician", null, "แพทย์", "00000");
+  await mk("nurse", "พว. วรรณา ดูแลดี", "clinician", null, "พยาบาลวิชาชีพ", "0000000000");
   const somsri = await mk("somsri", "สมศรี ใจดี", "pcu", BANDU, "พยาบาลวิชาชีพ");
   const manee = await mk("manee", "มณี รักษ์ดี", "pcu", NANGLAE, "พยาบาลวิชาชีพ");
   await mk("somchai", "สมชาย ตั้งใจ", "pcu", DOILAN, "นักวิชาการสาธารณสุข");

@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { Modal } from "@/components/ui/modal";
 import { PlusIcon } from "@/components/ui/icons";
-import { LIMITS, formatPhone, licenseNoProblem, nameProblem, phoneDigits, phoneProblem, typePhone } from "@/lib/format";
+import { LIMITS, formatPhone, licenseNoProblem, nameProblem, phoneDigits, phoneProblem, typeLicenseNo, typePhone } from "@/lib/format";
 import { createUser, resetPassword, setUserActive, updateUser, type UserInput, type UserResult } from "./actions";
 
 export type UserRow = UserInput & {
@@ -185,7 +185,7 @@ function UserDialog({ u, me = false, facilities, onClose, onDone }: {
 
   const input = (k: keyof UserInput, extra: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
     <input className={`fld${k === "username" || k === "licenseNo" ? " mono" : ""}${errors[k] ? " bad" : ""}`} id={`uf-${k}`} value={v[k]} autoComplete="off"
-      onChange={(e) => set(k, k === "username" ? e.target.value.toLowerCase() : k === "phone" ? typePhone(e.target.value) : e.target.value)} aria-invalid={!!errors[k]} {...extra} />
+      onChange={(e) => set(k, k === "username" ? e.target.value.toLowerCase() : k === "phone" ? typePhone(e.target.value) : k === "licenseNo" ? typeLicenseNo(e.target.value) : e.target.value)} aria-invalid={!!errors[k]} {...extra} />
   );
 
   if (view === "discard") {
@@ -270,7 +270,7 @@ function UserDialog({ u, me = false, facilities, onClose, onDone }: {
           </Field>
           <Field id="uf-displayName" label="ชื่อ–นามสกุล *" error={errors.displayName}>{input("displayName", { maxLength: LIMITS.name })}</Field>
           <Field span={2} id="uf-position" label="ตำแหน่ง" error={errors.position}>{input("position", { maxLength: LIMITS.position, placeholder: "เช่น พยาบาลวิชาชีพ" })}</Field>
-          <Field span={2} id="uf-licenseNo" label="เลขใบประกอบวิชาชีพ" error={errors.licenseNo}>{input("licenseNo", { maxLength: LIMITS.licenseNo, placeholder: "ถ้ามี" })}</Field>
+          <Field span={2} id="uf-licenseNo" label="เลขใบประกอบวิชาชีพ" error={errors.licenseNo}>{input("licenseNo", { maxLength: LIMITS.licenseNo, inputMode: "numeric", placeholder: "ถ้ามี" })}</Field>
           <Field span={2} id="uf-phone" label="เบอร์โทรศัพท์" error={errors.phone}>{input("phone", { maxLength: LIMITS.phone, inputMode: "tel", placeholder: "ถ้ามี" })}</Field>
         </div>
         {errors.form && <div className="flash bad" role="alert">{errors.form}</div>}
