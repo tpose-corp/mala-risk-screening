@@ -51,18 +51,26 @@ export const PARAM_INFO: Record<keyof RuleParams, { label: string; unit: string;
 };
 
 // Catches typing mistakes and impossible orderings. Returns Thai messages; empty = OK.
-export function paramProblems(p: RuleParams): string[] {
-  const out: string[] = [];
+// What is wrong with each number, keyed by field, so the admin page can mark and jump to the exact
+// box (and the server re-checks the same rules). Empty boxes arrive as NaN.
+export function paramFieldProblems(p: RuleParams): Partial<Record<keyof RuleParams, string>> {
+  const out: Partial<Record<keyof RuleParams, string>> = {};
   for (const [k, v] of Object.entries(p) as [keyof RuleParams, number][]) {
-    if (!Number.isFinite(v) || v < 0) out.push(`${PARAM_INFO[k].label}: ต้องเป็นตัวเลขไม่ติดลบ`);
+    if (Number.isNaN(v)) out[k] = "กรุณากรอกตัวเลข";
+    else if (!Number.isFinite(v) || v < 0) out[k] = "ต้องเป็นตัวเลขไม่ติดลบ";
   }
-  if (p.egfrContraindicatedBelow > p.egfrReducedBelow) out.push("ค่า eGFR ห้ามใช้ยา ต้องไม่สูงกว่าค่า eGFR ลดขนาดยา");
-  if (p.maxDoseReduced > p.maxDoseNormal) out.push("ขนาดยาช่วงลดขนาด ต้องไม่มากกว่าขนาดยาทั่วไป");
-  if (p.egfrContraindicatedBelow > 200 || p.egfrReducedBelow > 200 || p.egfrRiskBelow > 200) out.push("ค่า eGFR ต้องไม่เกิน 200");
-  if (p.bmiRiskBelow > 60) out.push("ค่า BMI ต้องไม่เกิน 60");
-  if (p.maxDoseNormal > 5000) out.push("ขนาดยาต้องไม่เกิน 5000 มก./วัน");
-  if (p.riskGroupMinScore === 0) out.push("คะแนนเกณฑ์กลุ่มเสี่ยงต้องมากกว่า 0");
+  const set = (k: keyof RuleParams, msg: string) => { out[k] ??= msg; };
+  for (const k of ["egfrContraindicatedBelow", "egfrReducedBelow", "egfrRiskBelow"] as const) if (p[k] > 200) set(k, "ค่า eGFR ต้องไม่เกิน 200");
+  if (p.egfrContraindicatedBelow > p.egfrReducedBelow) set("egfrContraindicatedBelow", `ต้องไม่สูงกว่าค่า eGFR ที่ให้ลดขนาดยา (${p.egfrReducedBelow})`);
+  if (p.maxDoseNormal > 5000) set("maxDoseNormal", "ขนาดยาต้องไม่เกิน 5000 มก./วัน");
+  if (p.maxDoseReduced > p.maxDoseNormal) set("maxDoseReduced", `ต้องไม่มากกว่าขนาดยาสูงสุดในกรณีทั่วไป (${p.maxDoseNormal})`);
+  if (p.bmiRiskBelow > 60) set("bmiRiskBelow", "ค่า BMI ต้องไม่เกิน 60");
+  if (p.riskGroupMinScore === 0) set("riskGroupMinScore", "คะแนนเกณฑ์กลุ่มเสี่ยงต้องมากกว่า 0");
   return out;
+}
+
+export function paramProblems(p: RuleParams): string[] {
+  return Object.entries(paramFieldProblems(p)).map(([k, m]) => `${PARAM_INFO[k as keyof RuleParams].label}: ${m}`);
 }
 
 export type ScreeningInput = {

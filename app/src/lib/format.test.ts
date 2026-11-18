@@ -1,6 +1,6 @@
 // Date-of-birth helpers used by the Add Patient form (PBI-04). Run with: npm test
 import { describe, expect, it } from "vitest";
-import { ageFromThaiDob, daysInMonth, dobProblem, hnProblem, isValidThaiDob, nameProblem, normalizeHn } from "./format";
+import { LIMITS, ageFromThaiDob, daysInMonth, dobProblem, formatPhone, hnProblem, isValidThaiDob, licenseNoProblem, nameProblem, normalizeHn, phoneProblem, typePhone } from "./format";
 
 const today = new Date(2026, 9, 7); // 7 ต.ค. 2569
 
@@ -61,5 +61,36 @@ describe("HN", () => {
     expect(hnProblem("HN6701")).not.toBeNull();
     expect(hnProblem("67--01")).not.toBeNull();
     expect(hnProblem("-6701")).not.toBeNull();
+  });
+});
+
+describe("field limits (18 Nov 2026)", () => {
+  it("mobile and landline numbers are fine, typed any way", () => {
+    expect(phoneProblem("0812345678")).toBeNull();
+    expect(phoneProblem("081 234 5678")).toBeNull();
+    expect(phoneProblem("๐๘๑-๒๓๔-๕๖๗๘")).toBeNull();
+    expect(phoneProblem("053123456")).toBeNull();
+    expect(phoneProblem("")).toBeNull();
+  });
+  it("wrong phone numbers say what is wrong", () => {
+    expect(phoneProblem("812345678")).toBe("เบอร์โทรต้องขึ้นต้นด้วย 0");
+    expect(phoneProblem("08123")).toContain("สั้นไป");
+    expect(phoneProblem("081234567890")).toContain("ยาวไป");
+    expect(phoneProblem("081-abc")).toBe("เบอร์โทรใช้ได้เฉพาะตัวเลข");
+  });
+  it("phones are stored with dashes", () => {
+    expect(formatPhone("0812345678")).toBe("081-234-5678");
+    expect(formatPhone("021234567")).toBe("02-123-4567");
+    expect(formatPhone("053123456")).toBe("053-123-456");
+    expect(typePhone("08123")).toBe("081-23");
+    expect(typePhone("0812345678999")).toBe("081-234-5678");
+  });
+  it("HN, name and licence have a maximum length", () => {
+    expect(hnProblem("1".repeat(LIMITS.hn))).toBeNull();
+    expect(hnProblem("1".repeat(LIMITS.hn + 1))).toContain("ยาวเกิน");
+    expect(nameProblem("ก".repeat(LIMITS.name + 1))).toContain("ยาวเกิน");
+    expect(licenseNoProblem("ว.12345")).toBeNull();
+    expect(licenseNoProblem("ว.12345@")).toBe("ใช้ได้เฉพาะตัวอักษร ตัวเลข จุด และขีด");
+    expect(licenseNoProblem("1".repeat(21))).toContain("ยาวเกิน");
   });
 });

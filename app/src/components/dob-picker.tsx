@@ -17,10 +17,12 @@ const digits = (s: string) => s.replace(/\D/g, "");
 
 // onValue tells the parent form the complete "dd/mm/yyyy" value (or "" while incomplete),
 // so the form can say which required fields are still empty.
-export function DobPicker({ error, onValue }: { error?: string; onValue?: (dob: string) => void }) {
-  const [day, setDay] = useState("");
-  const [month, setMonth] = useState("");
-  const [year, setYear] = useState("");
+// initial: a stored "dd/mm/yyyy" to start from (the admin's edit form); empty for a new patient.
+export function DobPicker({ error, onValue, initial = "" }: { error?: string; onValue?: (dob: string) => void; initial?: string }) {
+  const start = initial.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const [day, setDay] = useState(start ? String(Number(start[1])) : "");
+  const [month, setMonth] = useState(start ? String(Number(start[2])) : "");
+  const [year, setYear] = useState(start ? start[3] : "");
   const monthRef = useRef<HTMLSelectElement>(null);
   const yearRef = useRef<HTMLInputElement>(null);
   const calBtnRef = useRef<HTMLButtonElement>(null);

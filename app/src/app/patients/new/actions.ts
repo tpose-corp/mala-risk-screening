@@ -13,7 +13,7 @@ import { z } from "zod";
 import { asActor } from "@/lib/actor";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
-import { isValidThaiDob, nameProblem, normalizeCardId } from "@/lib/format";
+import { formatPhone, isValidThaiDob, nameProblem, normalizeCardId, phoneProblem } from "@/lib/format";
 import { requireFacilityStaff } from "@/lib/session";
 
 export type NewPatientState =
@@ -35,7 +35,15 @@ const NewPatientSchema = z.object({
     }),
   sex: z.enum(["หญิง", "ชาย"], { error: "กรุณาเลือกเพศ" }),
   dob: z.string().refine((v) => isValidThaiDob(v), { error: "กรุณาเลือกวันเกิดให้ครบ (วัน / เดือน / ปี พ.ศ.)" }),
-  phone: z.string().trim().max(20).optional(),
+  phone: z
+    .string()
+    .trim()
+    .superRefine((v, ctx) => {
+      const problem = phoneProblem(v);
+      if (problem) ctx.addIssue({ code: "custom", message: problem });
+    })
+    .transform((v) => (v ? formatPhone(v) : v))
+    .optional(),
 });
 
 export async function createPatient(_prev: NewPatientState, formData: FormData): Promise<NewPatientState> {

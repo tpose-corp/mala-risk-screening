@@ -12,7 +12,7 @@ import { asActor } from "@/lib/actor";
 import { audit } from "@/lib/audit";
 import { criteriaFor } from "@/lib/criteria";
 import { db } from "@/lib/db";
-import { hnProblem, isValidThaiDob, nameProblem, normalizeCardId } from "@/lib/format";
+import { formatPhone, hnProblem, isValidThaiDob, nameProblem, normalizeCardId, phoneDigits, phoneProblem } from "@/lib/format";
 import { evaluate } from "@/lib/rules";
 import { safeBack } from "@/lib/back-link";
 import { requireAdmin } from "@/lib/session";
@@ -27,9 +27,10 @@ const reasonOf = (fd: FormData) => String(fd.get("reason") ?? "").trim().slice(0
 export async function verifyPatient(id: number, fd: FormData) {
   const admin = await requireAdmin();
   const hn = String(fd.get("hn") ?? "").trim();
-  if (!hn || hnProblem(hn)) back(id, "err=hn", fd);
+  // "v…" codes: the page shows these at the identity-check box, not in the edit form
+  if (!hn || hnProblem(hn)) back(id, "err=vhn", fd);
   const clash = await db.patient.findFirst({ where: { hn, NOT: { id } } });
-  if (clash) back(id, "err=hndup", fd);
+  if (clash) back(id, "err=vhndup", fd);
   const p = await db.patient.findUnique({ where: { id } });
   if (!p) return;
   await asActor(admin.id, async (tx) => {
@@ -66,6 +67,12 @@ export async function updatePatient(id: number, fd: FormData) {
   if (next.sex !== "หญิง" && next.sex !== "ชาย") back(id, "err=sex", fd);
   if (!/^\d{13}$/.test(next.cardId)) back(id, "err=card", fd);
   if (next.hn && hnProblem(next.hn)) back(id, "err=hn", fd);
+  // phone: a real Thai number, stored with dashes; the same digits typed differently is no change
+  if (next.phone && phoneDigits(next.phone) === phoneDigits(p.phone ?? "")) next.phone = p.phone;
+  else if (next.phone) {
+    if (phoneProblem(next.phone)) back(id, "err=phone", fd);
+    next.phone = formatPhone(next.phone);
+  }
   if (await db.patient.findFirst({ where: { cardId: next.cardId, NOT: { id } } })) back(id, "err=carddup", fd);
   if (next.hn && (await db.patient.findFirst({ where: { hn: next.hn, NOT: { id } } }))) back(id, "err=hndup", fd);
 

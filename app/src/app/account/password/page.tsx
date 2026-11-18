@@ -19,7 +19,7 @@ export default async function PasswordPage() {
                 : "รหัสผ่านใหม่ต้องยาวอย่างน้อย 8 ตัวอักษร และมีทั้งตัวอักษรและตัวเลข"}
             </div>
           </div>
-          <PasswordForm />
+          <PasswordForm firstTime={user.mustChangePassword} />
         </div>
       </main>
     </>

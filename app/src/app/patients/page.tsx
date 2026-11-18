@@ -8,6 +8,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { PER_PAGE_CHOICES, num, pageInfo } from "@/lib/paging";
 import { FilterPanel } from "@/components/ui/filter-panel";
 import { PlusIcon } from "@/components/ui/icons";
+import { PageAids } from "@/components/ui/page-aids";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { ageFromThaiDob, thaiDate, thaiDateTime } from "@/lib/format";
@@ -15,6 +16,13 @@ import { requireFacilityStaff } from "@/lib/session";
 import { tasksFor } from "@/lib/advice";
 import { openCaseWhere } from "@/lib/open-cases";
 import { BlockedButton, BlockedPopup } from "@/components/open-cases-notice";
+
+// "วันนี้" / "เมื่อวาน" / "12 วันก่อน" / "3 เดือนก่อน": how long since the last screening
+function daysAgo(d: Date) {
+  const day = (x: Date) => Math.floor(new Date(x.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" })).getTime() / 86_400_000);
+  const n = day(new Date()) - day(d);
+  return n <= 0 ? "วันนี้" : n === 1 ? "เมื่อวาน" : n < 60 ? `${n} วันก่อน` : `${Math.round(n / 30)} เดือนก่อน`;
+}
 
 export default async function PatientsPage({ searchParams }: PageProps<"/patients">) {
   const user = await requireFacilityStaff();
@@ -101,38 +109,48 @@ export default async function PatientsPage({ searchParams }: PageProps<"/patient
 
         <FilterPanel action="/patients" hidden={per !== 20 ? { per: String(per) } : {}} search={{ name: "q", value: query, placeholder: "ค้นหาด้วยชื่อ–สกุล, HN หรือเลขบัตร 4 หลักท้าย" }} activeCount={0} clearHref="/patients" />
 
-        <Card title="ผู้ป่วยในหน่วยบริการ" count={`${num(total)} คน`} actions={<PerPage value={per} unit="คน" />} footer={<PagerBar pg={pg} href={href} unit="คน" />}>
+        <Card title="ผู้ป่วยในหน่วยบริการ" count={`${num(total)} คน${query ? ` ที่พบ "${query}"` : ""}`} actions={<PerPage value={per} unit="คน" />} footer={<PagerBar pg={pg} href={href} unit="คน" />}>
           <div className="ui-table-wrap sticky-head" key={href(pg.page)}>
-            <table className="ui-table">
+            <table className="ui-table ps-table">
+              <colgroup><col /><col className="c-hn" /><col className="c-last" /><col className="c-res" /><col className="c-act" /></colgroup>
               <thead>
-                <tr><th>ผู้ป่วย</th><th>อายุ</th><th>หน่วยบริการ</th><th>สถานะคัดกรองล่าสุด</th><th /></tr>
+                <tr><th>ผู้ป่วย</th><th>HN</th><th>คัดกรองล่าสุด</th><th>ผลล่าสุด</th><th /></tr>
               </thead>
               <tbody className="ui-fade-rows">
                 {patients.map((p) => {
                   const last = p.screenings[0];
+                  const age = ageFromThaiDob(p.dob);
                   return (
                     <tr key={p.id}>
                       <td>
-                        <b>{p.name}</b>
-                        <span className="sub-line">HN {p.hn ?? "ยังไม่มี"} {p.status === "pending" && <span className="ui-badge warn">รอยืนยันตัวตน</span>}</span>
+                        <b className="ps-name">{p.name}</b>
+                        <span className="sub-line">{p.sex}{age !== null ? ` ${age} ปี` : ""}</span>
                       </td>
-                      <td>{ageFromThaiDob(p.dob) ?? ""}</td>
-                      <td>{p.facility}</td>
                       <td>
-                        {!last ? (
-                          <span className="ui-badge muted">ยังไม่คัดกรอง</span>
-                        ) : (
-                          <Link href={`/screenings/${last.id}`} className={`ui-badge ${last.alertKind === "dose" ? "hi" : last.isAlert ? "warn" : "ok"}`}>
-                            {last.alertKind === "dose" ? "ใช้ยาเกินขนาด" : last.isAlert ? "เสี่ยง (ส่งต่อ รพ. แล้ว)" : "ไม่เสี่ยง"}
-                          </Link>
+                        {p.hn ? <span className="mono">{p.hn}</span> : <span className="ps-muted">ยังไม่มี HN</span>}
+                        {p.status === "pending" && (
+                          <span className="sub-line ps-pending" title="รพ. ยังไม่ได้ตรวจเลขบัตรและออก HN ให้ผู้ป่วยรายนี้ คัดกรองได้ตามปกติ">รอยืนยันตัวตน</span>
                         )}
-                        {last && <span className="sub-line">{thaiDateTime(last.createdAt)}</span>}
-                        {last && !last.confirmedAt && <Link href={`/screenings/${last.id}/confirm`} className="ui-badge warn" style={{ marginTop: 4 }}>รอยืนยันปิดเคส</Link>}
+                      </td>
+                      <td>
+                        {last ? <><span title={thaiDateTime(last.createdAt)}>{thaiDate(last.createdAt)}</span><span className="sub-line">{daysAgo(last.createdAt)}</span></> : <span className="ps-muted">ยังไม่เคยคัดกรอง</span>}
+                      </td>
+                      <td>
+                        {last ? (
+                          <>
+                            <Link href={`/screenings/${last.id}`} className={`ps-result ${last.alertKind === "dose" ? "hi" : last.isAlert ? "warn" : "ok"}`}>
+                              {last.alertKind === "dose" ? "ใช้ยาเกินขนาด" : last.isAlert ? "เสี่ยง ส่งต่อ รพ. แล้ว" : "ไม่เสี่ยง"}
+                            </Link>
+                            {!last.confirmedAt
+                              ? <Link href={`/screenings/${last.id}/confirm`} className="sub-line ps-open">รอยืนยันปิดเคส</Link>
+                              : <span className="sub-line">ปิดเคสแล้ว</span>}
+                          </>
+                        ) : <span className="ps-muted">ไม่มี</span>}
                       </td>
                       <td style={{ textAlign: "right" }}>
                         {blocked
-                          ? <BlockedButton count={openCases.length} className="ui-btn primary sm">เริ่มคัดกรอง</BlockedButton>
-                          : <Link href={`/patients/${p.id}/screen`} className="ui-btn primary sm">เริ่มคัดกรอง</Link>}
+                          ? <BlockedButton count={openCases.length} className="ui-btn sm ps-start">เริ่มคัดกรอง</BlockedButton>
+                          : <Link href={`/patients/${p.id}/screen`} className="ui-btn sm ps-start">เริ่มคัดกรอง</Link>}
                       </td>
                     </tr>
                   );
@@ -143,6 +161,7 @@ export default async function PatientsPage({ searchParams }: PageProps<"/patient
           </div>
         </Card>
         <p className="ui-hint">แสดงเฉพาะข้อมูลที่จำเป็นต่อการคัดกรอง</p>
+        <PageAids />
       </main>
     </>
   );

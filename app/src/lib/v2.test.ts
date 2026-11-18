@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { cardIdChecksumOk, formatCardId, maskCardId, normalizeCardId } from "./format";
 import { passwordProblem, temporaryPassword } from "./password";
-import { DEFAULT_PARAMS, evaluate, paramProblems, type ScreeningInput } from "./rules";
+import { DEFAULT_PARAMS, evaluate, paramFieldProblems, paramProblems, type ScreeningInput } from "./rules";
 
 const clean: ScreeningInput = {
   weightKg: 70, heightCm: 165, egfr: 80, doseMgDay: 1000,
@@ -71,4 +71,16 @@ describe("passwords", () => {
   it("temporary passwords pass the rules", () => {
     for (let i = 0; i < 20; i++) expect(passwordProblem(temporaryPassword())).toBeNull();
   });
+});
+
+describe("paramFieldProblems (admin criteria page marks the exact box)", () => {
+  it("no problems for the hospital defaults", () => expect(paramFieldProblems(DEFAULT_PARAMS)).toEqual({}));
+  it("an empty box asks for a number", () =>
+    expect(paramFieldProblems({ ...DEFAULT_PARAMS, bmiRiskScore: NaN })).toEqual({ bmiRiskScore: "กรุณากรอกตัวเลข" }));
+  it("a cross-field problem lands on the box that is out of order", () => {
+    expect(Object.keys(paramFieldProblems({ ...DEFAULT_PARAMS, egfrContraindicatedBelow: 50 }))).toEqual(["egfrContraindicatedBelow"]);
+    expect(Object.keys(paramFieldProblems({ ...DEFAULT_PARAMS, maxDoseReduced: 3000 }))).toEqual(["maxDoseReduced"]);
+  });
+  it("negative values are refused per box", () =>
+    expect(paramFieldProblems({ ...DEFAULT_PARAMS, heavyAlcoholScore: -1 }).heavyAlcoholScore).toBe("ต้องเป็นตัวเลขไม่ติดลบ"));
 });
