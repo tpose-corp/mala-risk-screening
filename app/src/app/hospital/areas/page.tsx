@@ -14,6 +14,7 @@ import { CompactSearch } from "@/components/ui/compact-search";
 import { rangeWords, readRange } from "@/lib/date-range";
 import { requireHospital } from "@/lib/session";
 
+import { PageAids } from "@/components/ui/page-aids";
 export default async function AreasPage({ searchParams }: PageProps<"/hospital/areas">) {
   const user = await requireHospital();
   const sp = await searchParams;
@@ -135,6 +136,7 @@ export default async function AreasPage({ searchParams }: PageProps<"/hospital/a
             </>)}
           </div>
         )}
+        <PageAids />
       </main>
     </>
   );

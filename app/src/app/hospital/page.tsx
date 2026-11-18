@@ -23,6 +23,7 @@ import { requireHospital } from "@/lib/session";
 import { ackSummary } from "@/lib/ack-summary";
 import { AcknowledgeButton } from "./acknowledge-button";
 
+import { PageAids } from "@/components/ui/page-aids";
 // "วันนี้ 08:40" for today, the full Thai date and time otherwise.
 function whenText(d: Date) {
   const tz = "Asia/Bangkok";
@@ -170,6 +171,7 @@ export default async function AlertInbox({ searchParams }: PageProps<"/hospital"
           </div>
           {done && <PagerBar pg={pg} href={pageHref} unit="เคส" />}
         </section>
+        <PageAids />
       </main>
     </>
   );

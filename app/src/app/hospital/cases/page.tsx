@@ -19,6 +19,7 @@ import { PerPage } from "@/components/ui/per-page";
 import { withBack } from "@/lib/back-link";
 import { requireHospital } from "@/lib/session";
 
+import { PageAids } from "@/components/ui/page-aids";
 export default async function AllCasesPage({ searchParams }: PageProps<"/hospital/cases">) {
   const user = await requireHospital();
   const sp = await searchParams;
@@ -129,6 +130,7 @@ export default async function AllCasesPage({ searchParams }: PageProps<"/hospita
           </div>
         </Card>
         <p className="ui-subtitle">{canExport ? "ไฟล์ CSV ใช้คอลัมน์ตามชีต report ในเอกสารของ รพ. ทุกการดาวน์โหลดถูกบันทึกใน audit log" : "การดาวน์โหลดข้อมูลทำได้เฉพาะผู้ดูแลระบบของ รพ."}</p>
+        <PageAids />
       </main>
     </>
   );

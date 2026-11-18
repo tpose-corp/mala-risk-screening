@@ -12,6 +12,7 @@ import { saveFollowUp } from "../../actions";
 import { AcknowledgeButton } from "../../acknowledge-button";
 import { ackSummary } from "@/lib/ack-summary";
 
+import { PageAids } from "@/components/ui/page-aids";
 // How much to show before folding the rest away (long histories stay tidy).
 const TIMELINE_SHOW = 6;
 const NOTES_SHOW = 3;
@@ -173,6 +174,7 @@ export default async function HospitalCasePage({ params, searchParams }: PagePro
             </Card>
           </div>
         </div>
+        <PageAids />
       </main>
     </>
   );

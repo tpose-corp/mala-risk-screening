@@ -14,6 +14,7 @@ import { DEFAULT_PARAMS, RULE_VERSION, type RuleParams } from "@/lib/rules";
 import { requireAdmin } from "@/lib/session";
 import { CriteriaForm, type HistoryRow } from "./criteria-form";
 
+import { PageAids } from "@/components/ui/page-aids";
 export default async function CriteriaPage({ searchParams }: PageProps<"/admin/criteria">) {
   await requireAdmin();
   const sp = await searchParams;
@@ -43,6 +44,7 @@ export default async function CriteriaPage({ searchParams }: PageProps<"/admin/c
 
         {/* key: after a save the form starts again from the new version */}
         <CriteriaForm key={cur.version} version={cur.version} current={cur.params} history={history} />
+        <PageAids />
       </main>
     </>
   );

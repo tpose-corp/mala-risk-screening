@@ -10,6 +10,7 @@ import { thaiDateTime } from "@/lib/format";
 import { requireAdmin } from "@/lib/session";
 import { FacilitiesManager, type FacilityRow } from "./facilities-manager";
 
+import { PageAids } from "@/components/ui/page-aids";
 export default async function FacilitiesPage({ searchParams }: PageProps<"/admin/facilities">) {
   await requireAdmin();
   const sp = await searchParams;
@@ -45,6 +46,7 @@ export default async function FacilitiesPage({ searchParams }: PageProps<"/admin
             { key: "closed", label: `ปิดแล้ว ${all.length - nActive}`, href: "/admin/facilities?show=closed" },
           ]} />} />
         <FacilitiesManager rows={rows} activeUnits={activeUnits} />
+        <PageAids />
       </main>
     </>
   );
