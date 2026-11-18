@@ -9,13 +9,15 @@
 // The visible fields have no `name`, so they are NOT sent. A hidden input sends one value,
 // "dd/mm/yyyy", the same format the database already uses (and the server re-checks it).
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { THAI_MONTHS_FULL, ageFromThaiDob, dobProblem } from "@/lib/format";
 import { ThaiCalendar } from "./thai-calendar";
 
 const digits = (s: string) => s.replace(/\D/g, "");
 
-export function DobPicker({ error }: { error?: string }) {
+// onValue tells the parent form the complete "dd/mm/yyyy" value (or "" while incomplete),
+// so the form can say which required fields are still empty.
+export function DobPicker({ error, onValue }: { error?: string; onValue?: (dob: string) => void }) {
   const [day, setDay] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
@@ -49,6 +51,7 @@ export function DobPicker({ error }: { error?: string }) {
   const valid = complete && !looksLikeCE && !problem;
   const dob = valid ? `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}` : "";
   const age = valid ? ageFromThaiDob(dob) : null;
+  useEffect(() => { onValue?.(dob); }, [dob, onValue]);
 
   // Where the calendar opens: the typed date if there is one, else the typed year, else today.
   const now = new Date();

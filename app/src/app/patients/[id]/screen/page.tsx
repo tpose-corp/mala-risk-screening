@@ -6,6 +6,9 @@ import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { ageFromThaiDob, maskCardId, thaiDate, thaiDateTime } from "@/lib/format";
 import { requireFacilityStaff } from "@/lib/session";
+import { getSettings } from "@/lib/settings";
+import { countOpenCases } from "@/lib/open-cases";
+import { PatientFixNotice } from "./patient-fix-notice";
 import { ScreenForm } from "./screen-form";
 
 export default async function ScreenPage({ params, searchParams }: PageProps<"/patients/[id]/screen">) {
@@ -30,6 +33,8 @@ export default async function ScreenPage({ params, searchParams }: PageProps<"/p
     ? await db.screening.findFirst({ where: { id: editId, patientId: patient.id, facility: user.facility } })
     : null;
   if (editing?.confirmedAt) redirect(`/screenings/${editing.id}?locked=1`);
+  // Editing an open case is fine; a new screening waits until the unit's open cases are closed.
+  if (!editing && (await countOpenCases(user.facility))) redirect("/patients?blocked=1");
 
   await audit({ user, action: "patient.view", entity: "Patient", entityId: patient.id });
 
@@ -44,7 +49,7 @@ export default async function ScreenPage({ params, searchParams }: PageProps<"/p
 
   return (
     <>
-      <Topbar menu="patients" step={1} crumb={editing ? "แก้ไขผลคัดกรอง" : "แบบคัดกรอง"} />
+      <Topbar menu="patients" step={1} crumb={editing ? "แก้ไขผลคัดกรอง" : "แบบคัดกรอง"} caseId={editing?.id} />
       <main className="page">
         <div className="card" style={{ padding: "13px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div>
@@ -59,10 +64,11 @@ export default async function ScreenPage({ params, searchParams }: PageProps<"/p
               <span>อายุ {ageFromThaiDob(patient.dob)} ปี</span>
               <span>เกิดวันที่ {patient.dob}</span>
             </div>
+            <PatientFixNotice contact={(await getSettings()).adminContact} />
           </div>
           <div style={{ fontSize: 11.5, color: "var(--muted)", textAlign: "right" }}>
             {editing ? (
-              <>กำลังแก้ไขผลที่บันทึกเมื่อ {thaiDateTime(editing.createdAt)}<br />แก้ไขได้จนกว่าจะกดยืนยันและส่ง รพ.</>
+              <>กำลังแก้ไขผลที่บันทึกเมื่อ {thaiDateTime(editing.createdAt)}<br />แก้ไขได้จนกว่าจะยืนยันปิดเคส และ รพ. จะเห็นค่าที่แก้ไขล่าสุด</>
             ) : (
               <>วันที่ประเมิน: {thaiDateTime(new Date())}</>
             )}

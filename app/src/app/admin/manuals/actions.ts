@@ -19,6 +19,9 @@ export async function uploadManual(audience: string, fd: FormData) {
   const f = file as File;
   if (!(f.type === "application/pdf" || /\.pdf$/i.test(f.name))) done("err=type");
   if (f.size > MANUAL_MAX_MB * 1024 * 1024) done("err=size");
+  // the name and type come from the browser and can be faked: the file itself must start with "%PDF-"
+  const head = new Uint8Array(await f.slice(0, 5).arrayBuffer());
+  if (String.fromCharCode(...head) !== "%PDF-") done("err=type");
   const title = MANUAL_AUDIENCES.find((a) => a.key === audience)!.title;
   const m = await db.$transaction(async (tx) => {
     await tx.manual.updateMany({ where: { audience, active: true }, data: { active: false } });

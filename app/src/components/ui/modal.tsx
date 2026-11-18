@@ -11,6 +11,7 @@ export function Modal(props: {
   children: ReactNode;
   actions?: ReactNode; // extra buttons before "ตกลง"/"ปิด"
   closeLabel?: string;
+  closePrimary?: boolean; // the close button is the recommended choice (e.g. "stay and finish")
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -24,7 +25,7 @@ export function Modal(props: {
       <div className="ui-modal-body">{props.children}</div>
       <div className="ui-modal-actions">
         {props.actions}
-        <button type="button" className={`ui-btn ${props.actions ? "secondary" : "primary"}`} autoFocus onClick={() => ref.current?.close()}>
+        <button type="button" className={`ui-btn ${props.actions && !props.closePrimary ? "secondary" : "primary"}`} autoFocus onClick={() => ref.current?.close()}>
           {props.closeLabel ?? (props.actions ? "ปิด" : "ตกลง")}
         </button>
       </div>

@@ -4,9 +4,11 @@
 // with the bell, the user chip and log-out, and a floating manuals button.
 // On screens up to 1024px the sidebar becomes a drawer opened by the ☰ button.
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ComponentType } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ComponentType } from "react";
 import { logout } from "@/app/actions";
 import * as Ic from "./icons";
+import { Modal } from "./modal";
+import { IdleGuard } from "@/components/idle-guard";
 
 export type NavItem = { key: string; href: string; label: string; icon: keyof typeof ICONS; badge?: number; badgeTone?: "hi" | "warn" };
 export type NavSection = { key: string; label: string; groups: { head?: string; items: NavItem[] }[] };
@@ -26,6 +28,9 @@ export function Shell(props: {
   bell?: { count: number; href: string };
   manuals: { id: number; title: string }[];
   steps?: { labels: string[]; current: number };
+  notice?: { text: string; href: string; link: string }; // warning bar on every page (รพ.สต. open cases)
+  logoutWarn?: string; // shown in the log-out popup (รพ.สต. open cases)
+  idleMinutes: number; // automatic log-out after this long without activity
 }) {
   const activeSection = props.sections.find((s) => s.groups.some((g) => g.items.some((i) => i.key === props.active)))?.key ?? props.sections[0]?.key;
   const [open, setOpen] = useState<string | undefined>(activeSection);
@@ -33,6 +38,40 @@ export function Shell(props: {
   const single = props.sections.length === 1;
   const fab = useFabState();
   const hasManuals = props.manuals.length > 0;
+
+  // Sidebar folds on every device. Wide screens: a narrow icon rail (remembered per browser);
+  // narrower screens (≤ 1024px, where the sidebar is a drawer): slide it in and out.
+  const rail = useSyncExternalStore(subscribeRail, readRail, () => false);
+  useEffect(() => { document.body.classList.toggle("nav-rail", rail); }, [rail]);
+  const toggleNav = () => {
+    if (window.matchMedia("(max-width: 1024px)").matches) return setDrawer((d) => !d);
+    saveRail(!rail);
+  };
+
+  // Smooth menu: the clicked item lights up at once (before the next page arrives), a highlight
+  // slides from the old item to the new one, and a thin bar runs along the top while loading.
+  // `picked` is cleared when the new page reports its own active item.
+  const [picked, setPicked] = useState<string | undefined>(undefined);
+  const [pickedFor, setPickedFor] = useState(props.active);
+  if (pickedFor !== props.active) { setPickedFor(props.active); setPicked(undefined); }
+  const active = picked ?? props.active;
+  const loading = picked !== undefined && picked !== props.active;
+  const navRef = useRef<HTMLElement>(null);
+  const [pill, setPill] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+  const [pillReady, setPillReady] = useState(false); // no slide on the very first placement
+  useLayoutEffect(() => {
+    const place = () => {
+      const nav = navRef.current;
+      const el = nav?.querySelector<HTMLElement>(`[data-nav="${active}"]`);
+      if (!nav || !el || el.offsetParent === null || el.closest(".ui-nav-sec.collapsed")) return setPill(null);
+      const n = nav.getBoundingClientRect(), r = el.getBoundingClientRect();
+      setPill({ top: r.top - n.top, left: r.left - n.left, width: r.width, height: r.height });
+    };
+    place();
+    const t = setTimeout(place, 280); // again after a section has finished folding open or shut
+    const r = requestAnimationFrame(() => setPillReady(true));
+    return () => { clearTimeout(t); cancelAnimationFrame(r); };
+  }, [active, open, rail]);
 
   return (
     <>
@@ -45,9 +84,10 @@ export function Shell(props: {
             <span className="sub">รพ.เชียงรายประชานุเคราะห์</span>
           </span>
         </Link>
-        <nav aria-label="เมนูหลัก">
+        <nav aria-label="เมนูหลัก" ref={navRef} className="ui-nav">
+          {pill && <span className={`ui-nav-pill${pillReady ? " ready" : ""}`} aria-hidden="true" style={{ transform: `translate(${pill.left}px, ${pill.top}px)`, width: pill.width, height: pill.height }} />}
           {props.sections.map((s) => {
-            const isOpen = single || open === s.key;
+            const isOpen = single || rail || open === s.key;
             return (
               <div key={s.key} className={`ui-nav-sec${isOpen ? "" : " collapsed"}`}>
                 {!single && (
@@ -65,7 +105,13 @@ export function Shell(props: {
                         {g.items.map((it) => {
                           const Icon = ICONS[it.icon];
                           return (
-                            <Link key={it.key} href={it.href} className={`ui-nav-item${props.active === it.key ? " active" : ""}`} onClick={() => setDrawer(false)}>
+                            <Link key={it.key} href={it.href} data-nav={it.key} title={rail ? it.label : undefined} className={`ui-nav-item${active === it.key ? " active" : ""}`}
+                              aria-current={active === it.key ? "page" : undefined}
+                              onClick={(e) => {
+                                setDrawer(false);
+                                // plain click only (ctrl/cmd-click opens a new tab and stays here)
+                                if (!e.defaultPrevented && !e.metaKey && !e.ctrlKey && !e.shiftKey && it.key !== props.active) setPicked(it.key);
+                              }}>
                               <Icon />
                               <span>{it.label}</span>
                               {!!it.badge && <span className={`ui-nav-badge ${it.badgeTone ?? "hi"}`}>{it.badge}</span>}
@@ -86,9 +132,11 @@ export function Shell(props: {
       </aside>
       {drawer && <div className="ui-backdrop" onClick={() => setDrawer(false)} />}
 
+      {loading && <div className="ui-loadbar" aria-hidden="true" />}
+      <IdleGuard idleMinutes={props.idleMinutes} />
       <header className="ui-header">
         <div className="lead">
-          <button type="button" className="ui-nav-toggle" aria-controls="ui-side" aria-expanded={drawer} aria-label="เมนู" onClick={() => setDrawer((d) => !d)}>
+          <button type="button" className="ui-nav-toggle" aria-controls="ui-side" aria-expanded={drawer || !rail} aria-label={rail ? "กางเมนู" : "หุบเมนู"} title={rail ? "กางเมนู" : "หุบเมนู"} onClick={toggleNav}>
             <span /><span /><span />
           </button>
           <div className="crumb">
@@ -110,9 +158,7 @@ export function Shell(props: {
               <small>{props.user.role}</small>
             </span>
           </Link>
-          <form action={logout}>
-            <button type="submit" className="ui-logout" title="ออกจากระบบ" aria-label="ออกจากระบบ"><Ic.LogoutIcon /></button>
-          </form>
+          <LogoutButton warn={props.logoutWarn} />
         </div>
       </header>
       {props.steps && (
@@ -127,16 +173,35 @@ export function Shell(props: {
           </div>
         </div>
       )}
+      {props.notice && (
+        <div className="ui-notice" role="status">
+          <span>{props.notice.text}</span>
+          <Link href={props.notice.href} data-leave-ok>{props.notice.link}</Link>
+        </div>
+      )}
       {hasManuals && fab.ready && !fab.state.docked && <ManualFab manuals={props.manuals} state={fab.state} save={fab.save} />}
     </>
   );
 }
 
 // ---- Manuals: floating button that can be dragged or tucked into the sidebar ----
-// Same idea as the printing-request system: bottom-right by default; drag it and it snaps to the
-// nearer side; "ซ่อนปุ่มนี้" moves it into the sidebar as a normal menu row. Saved per browser.
+// Same idea as the printing-request system: bottom-right by default; drag it anywhere and it stays
+// where it is dropped (kept on screen, below the app header); "ซ่อนปุ่มนี้" moves it into the
+// sidebar as a normal menu row. Saved per browser. The position is kept as a distance from the
+// nearer side and from the bottom, so it stays in the same corner area when the window resizes.
 type Manual = { id: number; title: string };
-type FabState = { side: "left" | "right"; bottom: number; docked: boolean };
+// inset: px from the `side` edge (missing in older saved states: then the old snap positions apply)
+type FabState = { side: "left" | "right"; bottom: number; inset?: number; docked: boolean };
+const FAB_SIZE = 46;
+const HEADER_H = 64;
+const EDGE = 8;
+// keeps the button's top-left corner inside the window and below the app header
+function clampFab(x: number, y: number) {
+  return {
+    x: Math.min(window.innerWidth - FAB_SIZE - EDGE, Math.max(EDGE, x)),
+    y: Math.min(window.innerHeight - FAB_SIZE - EDGE, Math.max(HEADER_H + EDGE, y)),
+  };
+}
 const FAB_KEY = "mala.manualFab";
 const FAB_DEFAULT: FabState = { side: "right", bottom: 24, docked: false };
 
@@ -206,7 +271,7 @@ function ManualFab({ manuals, state, save }: { manuals: Manual[]; state: FabStat
     if (!s0.moved && Math.hypot(e.clientX - s0.x, e.clientY - s0.y) < 6) return; // a click, not a drag
     s0.moved = true;
     setOpen(false);
-    setDrag({ x: e.clientX, y: e.clientY });
+    setDrag(clampFab(e.clientX - FAB_SIZE / 2, e.clientY - FAB_SIZE / 2));
   };
   const onUp = (e: React.PointerEvent) => {
     const s0 = start.current;
@@ -214,14 +279,23 @@ function ManualFab({ manuals, state, save }: { manuals: Manual[]; state: FabStat
     if (!s0) return;
     if (!s0.moved) { setOpen((o) => !o); return; }
     setDrag(null);
-    const side = e.clientX < window.innerWidth / 2 ? "left" : "right";
-    const bottom = Math.min(window.innerHeight - 90, Math.max(16, window.innerHeight - e.clientY - 26));
-    save({ ...state, side, bottom: Math.round(bottom) });
+    const p = clampFab(e.clientX - FAB_SIZE / 2, e.clientY - FAB_SIZE / 2);
+    const side = p.x + FAB_SIZE / 2 < window.innerWidth / 2 ? "left" : "right";
+    const inset = side === "left" ? p.x : window.innerWidth - p.x - FAB_SIZE;
+    const bottom = Math.max(EDGE, window.innerHeight - p.y - FAB_SIZE);
+    save({ ...state, side, inset: Math.round(inset), bottom: Math.round(bottom) });
   };
 
+  // min() keeps a saved position on screen after the window gets smaller
+  const across = state.inset === undefined ? (state.side === "left" ? "var(--fab-left)" : "24px") : `min(${state.inset}px, calc(100vw - ${FAB_SIZE + EDGE}px))`;
   const style: React.CSSProperties = drag
-    ? { left: drag.x - 26, top: drag.y - 26, right: "auto", bottom: "auto", transition: "none" }
-    : { bottom: `calc(${state.bottom}px + var(--fab-lift, 0px))`, ...(state.side === "left" ? { left: "var(--fab-left)", right: "auto", alignItems: "flex-start" } : {}) };
+    ? { left: drag.x, top: drag.y, right: "auto", bottom: "auto", transition: "none" }
+    : {
+        // pages with a sticky save bar lift the button above it, but only while it is in its default
+        // place; once the user has dragged it, it stays exactly where it was dropped
+        bottom: `min(${state.inset === undefined ? `calc(${state.bottom}px + var(--fab-lift, 0px))` : `${state.bottom}px`}, calc(100vh - ${HEADER_H + EDGE + FAB_SIZE}px))`,
+        ...(state.side === "left" ? { left: across, right: "auto", alignItems: "flex-start" } : { right: across }),
+      };
 
   return (
     <div className={`ui-fab${drag ? " dragging" : ""}`} ref={box} style={style}>
@@ -241,6 +315,37 @@ function ManualFab({ manuals, state, save }: { manuals: Manual[]; state: FabStat
         <Ic.BookIcon />
       </button>
     </div>
+  );
+}
+
+// Folded-sidebar choice, kept in localStorage (memory if storage is blocked); every tab follows.
+let memoryRail = false;
+const readRail = () => { try { return localStorage.getItem("mala.navRail") === "1"; } catch { return memoryRail; } };
+const saveRail = (v: boolean) => {
+  try { localStorage.setItem("mala.navRail", v ? "1" : "0"); } catch { memoryRail = v; }
+  window.dispatchEvent(new Event("mala-rail"));
+};
+const subscribeRail = (cb: () => void) => {
+  window.addEventListener("storage", cb);
+  window.addEventListener("mala-rail", cb);
+  return () => { window.removeEventListener("storage", cb); window.removeEventListener("mala-rail", cb); };
+};
+
+// Log out with a check first. If the รพ.สต. still has open cases, the popup says so.
+function LogoutButton({ warn }: { warn?: string }) {
+  const [open, setOpen] = useState(false);
+  const form = useRef<HTMLFormElement>(null);
+  return (
+    <form ref={form} action={logout}>
+      <button type="button" className="ui-logout" title="ออกจากระบบ" aria-label="ออกจากระบบ" onClick={() => setOpen(true)}><Ic.LogoutIcon /></button>
+      {open && (
+        <Modal title="ออกจากระบบใช่ไหม" onClose={() => setOpen(false)} closeLabel="ยกเลิก"
+          actions={<button type="button" className="ui-btn primary" onClick={() => form.current?.requestSubmit()}>ออกจากระบบ</button>}>
+          <p>เมื่อออกจากระบบแล้ว ต้องเข้าสู่ระบบใหม่เพื่อใช้งานต่อ</p>
+          {warn && <p className="logout-warn">{warn}</p>}
+        </Modal>
+      )}
+    </form>
   );
 }
 

@@ -7,7 +7,7 @@ import { changePassword } from "./actions";
 export function PasswordForm() {
   const [state, action, pending] = useActionState(changePassword, undefined);
   return (
-    <form onSubmit={submitWithoutReset(action)} className="card pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <form method="post" onSubmit={submitWithoutReset(action)} className="card pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div>
         <label className="lbl" htmlFor="current">รหัสผ่านปัจจุบัน</label>
         <input className="fld" id="current" name="current" type="password" autoComplete="current-password" required />

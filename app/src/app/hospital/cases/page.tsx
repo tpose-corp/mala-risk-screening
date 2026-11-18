@@ -4,14 +4,17 @@
 // (25 per page) and the CSV download uses the same filters as the screen.
 import Link from "next/link";
 import { Card, PageHead, PagerBar } from "@/components/ui/card";
-import { FilterGroup, FilterPanel } from "@/components/ui/filter-panel";
+import { FilterGroup } from "@/components/ui/filter-panel";
+import { CompactSearch } from "@/components/ui/compact-search";
+import { DateRange } from "@/components/date-range";
+import { rangeWords } from "@/lib/date-range";
 import { DownloadIcon } from "@/components/ui/icons";
 import { Topbar } from "@/components/topbar";
 import { audit } from "@/lib/audit";
 import { hasFilters, queryFor, readFilters, whereFor } from "@/lib/case-filters";
 import { db } from "@/lib/db";
 import { ageFromThaiDob, thaiDateTime } from "@/lib/format";
-import { PER_PAGE_CHOICES, PERIODS, num, pageInfo } from "@/lib/paging";
+import { PER_PAGE_CHOICES, num, pageInfo } from "@/lib/paging";
 import { PerPage } from "@/components/ui/per-page";
 import { withBack } from "@/lib/back-link";
 import { requireHospital } from "@/lib/session";
@@ -42,7 +45,14 @@ export default async function AllCasesPage({ searchParams }: PageProps<"/hospita
   const canExport = user.role === "admin";
   await audit({ user, action: "hospital.cases.view", detail: `total=${total} page=${pg.page}` });
 
-  const activeFilters = [f.fac, f.period !== "all", f.result !== "all"].filter(Boolean).length;
+  const activeFilters = [f.fac, f.result !== "all"].filter(Boolean).length;
+  // years (พ.ศ.) with any screening, newest first, for the date filter
+  const oldest = await db.screening.findFirst({ orderBy: { createdAt: "asc" }, select: { createdAt: true } });
+  const thisYear = new Date().getFullYear() + 543;
+  const firstYear = oldest ? Number(oldest.createdAt.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" }).slice(0, 4)) + 543 : thisYear;
+  const years = Array.from({ length: thisYear - firstYear + 1 }, (_, i) => thisYear - i);
+  // the date filter keeps the other filters; the search keeps the dates
+  const keep = (o: Record<string, string>) => Object.fromEntries(Object.entries(o).filter(([, v]) => v));
   const resultLabel = (c: (typeof cases)[number]) =>
     c.alertKind === "dose" ? <span className="ui-badge hi">ใช้ยาเกินขนาด</span>
       : c.isAlert ? <span className="ui-badge warn">เสี่ยงทั่วไป</span>
@@ -54,37 +64,33 @@ export default async function AllCasesPage({ searchParams }: PageProps<"/hospita
       <main className="ui-page">
         <PageHead sticky title="ข้อมูลทุกเคส" subtitle="ผลคัดกรองทุกเคสจาก รพ.สต. ในเครือข่าย เก็บไว้ให้ รพ. วิเคราะห์" />
 
-        <div className="ui-stats">
-          <div className="ui-stat"><div className="label">{hasFilters(f) ? "คัดกรองตามตัวกรอง" : "คัดกรองทั้งหมด"}</div><div className="value">{num(total)}</div></div>
-          <div className="ui-stat hi"><div className="label">แจ้งเตือน</div><div className="value">{num(alerts)}</div></div>
-          <div className="ui-stat"><div className="label">รพ.สต. ที่ส่งข้อมูล</div><div className="value">{num(sending)}</div></div>
-        </div>
-
-        <FilterPanel action="/hospital/cases" hidden={per === 20 ? {} : { per: String(per) }} search={{ name: "q", value: f.q, placeholder: "ค้นหาชื่อหรือ HN" }} activeCount={activeFilters} clearHref="/hospital/cases">
-          <FilterGroup label="หน่วยบริการที่คัดกรอง">
-            <select className="ui-select" name="fac" defaultValue={f.fac}>
-              <option value="">ทุกหน่วยบริการ</option>
-              {facilities.map((x) => <option key={x} value={x}>{x}</option>)}
-            </select>
-          </FilterGroup>
-          <FilterGroup label="ผลประเมิน">
-            <select className="ui-select" name="result" defaultValue={f.result}>
-              <option value="all">ทุกผล</option>
-              <option value="alert">แจ้งเตือน</option>
-              <option value="noalert">ไม่แจ้งเตือน</option>
-            </select>
-          </FilterGroup>
-          <FilterGroup label="ช่วงเวลาที่คัดกรอง">
-            <select className="ui-select" name="period" defaultValue={f.period}>
-              {PERIODS.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-            </select>
-          </FilterGroup>
-        </FilterPanel>
+        <section className="ui-card dr-card" aria-label="ช่วงเวลาที่คัดกรอง">
+          <DateRange key={`${f.from}|${f.to}`} action="/hospital/cases" years={years} title="ช่วงเวลาที่คัดกรอง" current={rangeWords(f)}
+            hidden={keep({ q: f.q, fac: f.fac, result: f.result === "all" ? "" : f.result, per: per === 20 ? "" : String(per) })}
+            from={f.from} to={f.to} clearHref={`/hospital/cases${queryFor({ ...f, from: "", to: "", period: "all" }, perQ)}`} />
+        </section>
 
         <Card
           title="รายการคัดกรอง"
-          count={`${num(total)} เคส`}
+          count={<>{num(total)} เคส <span className="cs-mini hi">แจ้งเตือน {num(alerts)}</span> <span className="cs-mini">จาก {num(sending)} หน่วยบริการ</span></>}
           actions={<>
+            <CompactSearch action="/hospital/cases" name="q" value={f.q} placeholder="ชื่อหรือ HN" activeCount={activeFilters}
+              hidden={keep({ from: f.from, to: f.to, per: per === 20 ? "" : String(per) })}
+              clearHref={`/hospital/cases${queryFor({ ...f, q: "", fac: "", result: "all" }, perQ)}`}>
+              <FilterGroup label="หน่วยบริการที่คัดกรอง">
+                <select className="ui-select" name="fac" defaultValue={f.fac}>
+                  <option value="">ทุกหน่วยบริการ</option>
+                  {facilities.map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+              </FilterGroup>
+              <FilterGroup label="ผลประเมิน">
+                <select className="ui-select" name="result" defaultValue={f.result}>
+                  <option value="all">ทุกผล</option>
+                  <option value="alert">แจ้งเตือน</option>
+                  <option value="noalert">ไม่แจ้งเตือน</option>
+                </select>
+              </FilterGroup>
+            </CompactSearch>
             <PerPage value={per} unit="เคส" />
             {canExport && (
               // A plain link: the browser downloads the file the route handler returns, same filters as the screen.

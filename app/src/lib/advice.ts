@@ -6,6 +6,13 @@
 //   ("ผลประเมิน & คำแนะนำเฉพาะราย"), copied as written. Its 5th card ("นัดตรวจการทำงานของไตซ้ำ")
 //   is cut off in the PDF, so it is left out until the hospital sends the full text.
 // The app never writes its own clinical advice: if the hospital changes the text, change it here.
+//
+// Wording clarified by the team on 18 Nov 2026 (meaning kept, no new instruction added). The deck
+// labels these cards "AI GENERATED", so the hospital pharmacist still has to approve them. Each
+// change keeps the deck's original wording in a comment so it can be shown and reverted:
+// - quitAlcohol: said "ในภาวะไตเสื่อม" even for patients whose kidneys are normal
+// - sickDay: "ให้หยุดยา" did not say which drug; a patient could stop every medicine (e.g. insulin)
+// - waterNoNsaid: "หากไม่มีข้อจำกัด" did not say what the limit is; "NSAIDs" is not a word patients know
 
 import { sickDayReasonsOf } from "./rules";
 
@@ -14,19 +21,27 @@ export type AdviceCard = { title: string; body?: string };
 export const ADVICE = {
   quitAlcohol: {
     title: "งดแอลกอฮอล์ทุกชนิด",
-    body: "การดื่มร่วมกับยา Metformin ในภาวะไตเสื่อมเพิ่มความเสี่ยงเลือดเป็นกรดจากแลคติกอย่างชัดเจน",
+    // deck: "การดื่มร่วมกับยา Metformin ในภาวะไตเสื่อมเพิ่มความเสี่ยงเลือดเป็นกรดจากแลคติกอย่างชัดเจน"
+    body: "การดื่มแอลกอฮอล์ร่วมกับยา Metformin เพิ่มความเสี่ยงภาวะเลือดเป็นกรดจากแลคติก ยิ่งไตทำงานลดลงยิ่งเสี่ยงมาก",
   },
   sickDay: {
-    title: "หยุดยาชั่วคราวเมื่อร่างกายขาดน้ำ",
-    body: "ท้องเสีย อาเจียน มีไข้สูง หรือกินได้น้อย ให้หยุดยาและติดต่อ รพ.สต. ทันที (sick day rule)",
+    // deck title: "หยุดยาชั่วคราวเมื่อร่างกายขาดน้ำ"
+    title: "หยุดยา Metformin ชั่วคราวเมื่อร่างกายขาดน้ำ",
+    // deck: "ท้องเสีย อาเจียน มีไข้สูง หรือกินได้น้อย ให้หยุดยาและติดต่อ รพ.สต. ทันที (sick day rule)"
+    // Plain words for the patient. What "sick day rule" means belongs in the staff manual, not here.
+    // Other medicines go to a doctor or pharmacist: the รพ.สต. screener may be a nurse or a public
+    // health officer, not someone who can decide which drug is safe to stop.
+    body: "ถ้าท้องเสีย อาเจียน มีไข้สูง หรือกินอาหารได้น้อย ให้หยุดกินยา Metformin แล้วรีบติดต่อ รพ.สต. ส่วนยาอื่นอย่าหยุดเอง ให้ถามแพทย์หรือเภสัชกรก่อน",
   },
   warningSigns: {
     title: "สังเกตอาการเตือน",
-    body: "หายใจหอบลึก ปวดเมื่อยกล้ามเนื้อมาก อ่อนเพลียผิดปกติ คลื่นไส้ ให้ไปโรงพยาบาลทันที",
+    body: "ถ้าหายใจหอบลึก ปวดเมื่อยกล้ามเนื้อมาก อ่อนเพลียผิดปกติ หรือคลื่นไส้ ให้ไปโรงพยาบาลทันที",
   },
   waterNoNsaid: {
-    title: "ดื่มน้ำเพียงพอ เลี่ยง NSAIDs",
-    body: "น้ำ 6–8 แก้วต่อวันหากไม่มีข้อจำกัด และไม่ซื้อยาแก้ปวดหรือยาชุดกินเอง",
+    // deck title: "ดื่มน้ำเพียงพอ เลี่ยง NSAIDs"
+    title: "ดื่มน้ำให้เพียงพอ เลี่ยงยาแก้ปวดแก้อักเสบ (NSAIDs)",
+    // deck: "น้ำ 6–8 แก้วต่อวันหากไม่มีข้อจำกัด และไม่ซื้อยาแก้ปวด/ยาชุดกินเอง"
+    body: "ดื่มน้ำวันละ 6–8 แก้ว ยกเว้นผู้ที่แพทย์สั่งให้จำกัดน้ำ และไม่ซื้อยาแก้ปวดหรือยาชุดกินเอง",
   },
 } satisfies Record<string, AdviceCard>;
 

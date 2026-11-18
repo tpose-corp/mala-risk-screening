@@ -4,17 +4,18 @@
 // record that was already sent to the hospital; the hospital admin can, with a reason.
 import Link from "next/link";
 import { useState } from "react";
+import { PencilIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 
 export function LockedNotice({ editHref, contact, openAtStart = false }: { editHref: string | null; contact: string; openAtStart?: boolean }) {
   const [open, setOpen] = useState(openAtStart);
-  if (editHref) return <Link href={editHref} className="btn-s">แก้ไขข้อมูลคัดกรอง</Link>;
+  if (editHref) return <Link href={editHref} className="btn-s btn-edit"><PencilIcon />แก้ไขข้อมูลคัดกรอง</Link>;
   return (
     <>
-      <button type="button" className="btn-s" onClick={() => setOpen(true)}>แก้ไขข้อมูลคัดกรอง</button>
+      <button type="button" className="btn-s btn-edit" onClick={() => setOpen(true)}><PencilIcon />แก้ไขข้อมูลคัดกรอง</button>
       {open && (
         <Modal tone="warn" title="แก้ไขไม่ได้แล้ว" onClose={() => setOpen(false)}>
-          <p>ผลประเมินนี้ยืนยันและส่งให้ รพ. แล้ว เจ้าหน้าที่ รพ.สต. จึงแก้ไขเองไม่ได้</p>
+          <p>ผลประเมินนี้ยืนยันปิดเคสแล้ว เจ้าหน้าที่ รพ.สต. จึงแก้ไขเองไม่ได้</p>
           <p>หากข้อมูลผิด กรุณาติดต่อ <b>{contact}</b> เพื่อให้ผู้ดูแลระบบแก้ไขให้ ระบบจะบันทึกประวัติการแก้ไขไว้ทุกครั้ง</p>
         </Modal>
       )}

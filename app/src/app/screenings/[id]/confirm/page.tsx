@@ -8,8 +8,9 @@ import { tasksFor } from "@/lib/advice";
 import { thaiDateTime } from "@/lib/format";
 import { loadScreening } from "@/lib/screening";
 import { ROLE_LABEL, requireFacilityStaff } from "@/lib/session";
-import { ConfirmForm, Rows, type Row } from "./confirm-form";
+import { ConfirmForm, Facts, Rows, type Fact } from "./confirm-form";
 import { SavedPopup } from "./saved-popup";
+import { ScreeningSummary } from "./summary";
 
 export default async function ConfirmPage({ params, searchParams }: PageProps<"/screenings/[id]/confirm">) {
   const user = await requireFacilityStaff();
@@ -18,7 +19,7 @@ export default async function ConfirmPage({ params, searchParams }: PageProps<"/
   if (needsAdvice && !s.adviceGivenAt && !s.confirmedAt) redirect(`/screenings/${s.id}/next`);
 
   // What has been done so far, as "label: value" rows.
-  const done: Row[] = [];
+  const done: Fact[] = [];
   if (s.isAlert) {
     done.push({ k: "แจ้งแพทย์ที่ รพ.", v: s.alertRaisedAt ? thaiDateTime(s.alertRaisedAt) : "" });
     done.push(
@@ -36,17 +37,22 @@ export default async function ConfirmPage({ params, searchParams }: PageProps<"/
     const justSaved = (await searchParams).saved === "1";
     return (
       <>
-        <Topbar menu="patients" step={4} crumb="ยืนยันปิดเคส" />
+        <Topbar menu="patients" step={4} crumb="ยืนยันปิดเคส" caseId={s.id} />
         {justSaved && <SavedPopup name={s.patient.name} time={thaiDateTime(s.confirmedAt)} />}
-        <main className="page">
-          <div className="center">
-            <div className="card doc">
+        <main className="page split cf-split">
+          <div className="main">
+            <div className="card doc cf-doc">
               <CaseHead name={s.patient.name} hn={s.patient.hn} dob={s.patient.dob} isAlert={s.isAlert}
                 status={s.isAlert ? "แจ้งเตือน ปิดเคสแล้ว" : "ปิดเคสแล้ว"} />
+              <ScreeningSummary s={s} />
               <section className="doc-sec">
                 <h2>สรุปสิ่งที่ดำเนินการแล้ว</h2>
-                <Rows rows={done} />
+                <Facts rows={done} />
               </section>
+            </div>
+          </div>
+          <aside className="side cf-side">
+            <div className="card doc cf-doc">
               <section className="doc-sec">
                 <h2>การยืนยันผลการประเมิน</h2>
                 <Rows rows={[
@@ -57,11 +63,9 @@ export default async function ConfirmPage({ params, searchParams }: PageProps<"/
                 ]} />
               </section>
             </div>
-            <div className="row">
-              <Link href={`/screenings/${s.id}`} className="btn-s">ดูผลประเมิน</Link>
-              <Link href="/patients" className="btn">เริ่มเคสใหม่</Link>
-            </div>
-          </div>
+            <Link href="/patients" className="btn">เริ่มเคสใหม่</Link>
+            <Link href={`/screenings/${s.id}`} className="btn-s">ดูผลประเมิน</Link>
+          </aside>
         </main>
       </>
     );
@@ -69,19 +73,19 @@ export default async function ConfirmPage({ params, searchParams }: PageProps<"/
 
   return (
     <>
-      <Topbar menu="patients" step={4} crumb="ยืนยันปิดเคส" />
+      <Topbar menu="patients" step={4} crumb="ยืนยันปิดเคส" caseId={s.id} />
       <main className="page">
-        <div className="center">
           <ConfirmForm
             screeningId={s.id}
+            patientId={s.patientId}
             head={head}
+            summary={<ScreeningSummary s={s} />}
             done={done}
             confirmer={`${user.displayName} (${ROLE_LABEL[user.role] ?? user.role})`}
             facility={user.facility}
             now={thaiDateTime(new Date())}
             ruleVersion={s.ruleVersion}
           />
-        </div>
       </main>
     </>
   );

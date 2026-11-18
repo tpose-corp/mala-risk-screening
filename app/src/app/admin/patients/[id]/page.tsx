@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Topbar } from "@/components/topbar";
+import { ConfirmSubmit } from "@/components/ui/confirm-submit";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { ageFromThaiDob, cardIdChecksumOk, formatCardId, thaiDateTime } from "@/lib/format";
@@ -87,8 +88,9 @@ export default async function AdminPatient({ params, searchParams }: PageProps<"
             <div className="sec-title" style={{ margin: 0 }}>ยืนยันตัวตนผู้ป่วย</div>
             <div className="note">ตรวจเลขประจำตัวประชาชน <b className="mono">{formatCardId(p.cardId)}</b> {cardIdChecksumOk(p.cardId) ? "(เลขหลักสุดท้ายถูกต้องตามสูตร)" : "(เลขหลักสุดท้ายไม่ตรงตามสูตร กรุณาตรวจกับระบบ รพ.)"} กับระบบของ รพ. แล้วใส่ HN</div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <input className="fld mono" name="hn" required placeholder="HN จากระบบ รพ." defaultValue={p.hn ?? ""} style={{ maxWidth: 240 }} />
-              <button className="btn-s primary" type="submit">ยืนยันตัวตนและบันทึก HN</button>
+              <input className="fld mono" id="verifyHn" name="hn" required placeholder="HN จากระบบ รพ." defaultValue={p.hn ?? ""} style={{ maxWidth: 240 }} />
+              <ConfirmSubmit mode="all" className="btn-s primary" label="ยืนยันตัวตนและบันทึก HN" title="ยืนยันตัวตนผู้ป่วย" confirmLabel="ยืนยันตัวตน"
+                note={`${p.name} เลขบัตร ${formatCardId(p.cardId)} หลังยืนยันแล้ว เจ้าหน้าที่ รพ.สต. จะเห็นสถานะผู้ป่วยเป็นยืนยันแล้ว`} />
             </div>
           </form>
         )}
@@ -99,7 +101,7 @@ export default async function AdminPatient({ params, searchParams }: PageProps<"
             {backField}
             <div className="form-grid">
               <div><label className="lbl" htmlFor="name">ชื่อ–นามสกุล</label><input className="fld" id="name" name="name" defaultValue={p.name} required /></div>
-              <div><label className="lbl" htmlFor="cardId">เลขประจำตัวประชาชน</label><input className="fld mono" id="cardId" name="cardId" defaultValue={p.cardId} required inputMode="numeric" maxLength={17} pattern="[0-9๐-๙ -]{13,17}" title="เลขประจำตัวประชาชน 13 หลัก" /></div>
+              <div><label className="lbl" htmlFor="cardId">เลขประจำตัวประชาชน</label><input className="fld mono" id="cardId" name="cardId" defaultValue={p.cardId} required inputMode="numeric" maxLength={17} pattern="[0-9๐-๙ \-]{13,17}" title="เลขประจำตัวประชาชน 13 หลัก" /></div>
               <div><label className="lbl" htmlFor="hn">HN</label><input className="fld mono" id="hn" name="hn" defaultValue={p.hn ?? ""} /></div>
               <div><label className="lbl" htmlFor="dob">วันเกิด (วว/ดด/ปปปป พ.ศ.)</label><input className="fld" id="dob" name="dob" defaultValue={p.dob} required /></div>
               <div>
@@ -116,7 +118,7 @@ export default async function AdminPatient({ params, searchParams }: PageProps<"
               </div>
             </div>
             <div><label className="lbl" htmlFor="reason">เหตุผลที่แก้ไข *</label><input className="fld" id="reason" name="reason" required placeholder="เช่น รพ.สต. แจ้งว่าพิมพ์วันเกิดผิด / ผู้ป่วยย้ายที่อยู่" /></div>
-            <button className="btn" type="submit">บันทึกการแก้ไข</button>
+            <ConfirmSubmit className="btn" label="บันทึกการแก้ไข" title="ตรวจสอบการแก้ไขข้อมูลผู้ป่วย" note="ค่าเดิมจะถูกเก็บไว้ในประวัติการแก้ไข" />
           </form>
         </details>
 
@@ -167,7 +169,7 @@ export default async function AdminPatient({ params, searchParams }: PageProps<"
             </div>
             <div><label className="lbl" htmlFor="reason2">เหตุผลที่แก้ไข *</label><input className="fld" id="reason2" name="reason" required placeholder="เช่น รพ.สต. โทรแจ้งว่ากรอก eGFR ผิด" /></div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button className="btn" type="submit">บันทึกการแก้ไขผลคัดกรอง</button>
+              <ConfirmSubmit className="btn" label="บันทึกการแก้ไขผลคัดกรอง" title="ตรวจสอบการแก้ไขผลคัดกรอง" note={`ระบบจะคำนวณผลใหม่ด้วยเกณฑ์ ${s.ruleVersion} และเก็บค่าเดิมไว้ในประวัติการแก้ไข`} />
               <Link href={`/admin/patients/${p.id}?${keep}`} className="btn-s">ยกเลิก</Link>
             </div>
           </form>
@@ -199,7 +201,9 @@ export default async function AdminPatient({ params, searchParams }: PageProps<"
             <label className="lbl" htmlFor="reason3">{p.active ? "ปิดใช้งานผู้ป่วยรายนี้ (ข้อมูลไม่ถูกลบ)" : "เปิดใช้งานผู้ป่วยรายนี้อีกครั้ง"} เหตุผล *</label>
             <input className="fld" id="reason3" name="reason" required placeholder="เช่น ลงทะเบียนซ้ำ / ผู้ป่วยเสียชีวิต" />
           </div>
-          <button className={`btn-s${p.active ? "" : " primary"}`} type="submit">{p.active ? "ปิดใช้งาน" : "เปิดใช้งาน"}</button>
+          <ConfirmSubmit mode="all" className={`btn-s${p.active ? "" : " primary"}`} label={p.active ? "ปิดใช้งาน" : "เปิดใช้งาน"}
+            title={p.active ? "ปิดใช้งานผู้ป่วยรายนี้" : "เปิดใช้งานผู้ป่วยรายนี้"} confirmLabel={p.active ? "ยืนยันปิดใช้งาน" : "ยืนยันเปิดใช้งาน"}
+            note={p.active ? `${p.name} จะไม่แสดงในรายชื่อของ รพ.สต. ข้อมูลไม่ถูกลบ และเปิดใช้งานกลับได้` : `${p.name} จะกลับมาแสดงในรายชื่อของ รพ.สต.`} />
         </form>
       </main>
     </>

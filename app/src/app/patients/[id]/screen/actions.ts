@@ -4,7 +4,7 @@
 // tamper with the outcome from the browser.
 //
 // v2 (17 Nov 2026): the same form also EDITS a screening, but only until it is confirmed.
-// After "ยืนยันและส่ง รพ." the รพ.สต. cannot change it any more; only the hospital admin can,
+// After "ยืนยันปิดเคส" the รพ.สต. cannot change it any more; only the hospital admin can,
 // with a reason (src/app/admin/patients/[id]/screenings).
 
 import { RedirectType, redirect } from "next/navigation";
@@ -17,6 +17,7 @@ import { isValidThaiDob } from "@/lib/format";
 import { evaluate } from "@/lib/rules";
 import { requireFacilityStaff } from "@/lib/session";
 import { getSettings } from "@/lib/settings";
+import { countOpenCases } from "@/lib/open-cases";
 
 export type ScreenState = { errors?: Record<string, string[] | undefined>; locked?: string } | undefined;
 
@@ -27,7 +28,11 @@ const note = z.string().trim().max(300, { error: "ยาวเกินไป (�
 const ScreenSchema = z.object({
   weightKg: z.coerce.number({ error: "กรอกน้ำหนัก" }).gt(0, { error: "น้ำหนักต้องมากกว่า 0" }).max(300, { error: "ตรวจสอบน้ำหนักอีกครั้ง" }),
   heightCm: z.coerce.number({ error: "กรอกส่วนสูง" }).min(50, { error: "ตรวจสอบส่วนสูงอีกครั้ง" }).max(250, { error: "ตรวจสอบส่วนสูงอีกครั้ง" }),
-  egfr: z.coerce.number({ error: "กรอก eGFR" }).min(0, { error: "eGFR ต้องไม่ติดลบ" }).max(200, { error: "ตรวจสอบค่า eGFR อีกครั้ง" }),
+  // An empty box must NOT become 0 (Number("") is 0, which would read as "ห้ามใช้ยา").
+  // No eGFR from the hospital means the patient cannot be screened yet.
+  egfr: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.coerce.number({ error: "กรุณากรอก eGFR ล่าสุดจาก รพ. ถ้ายังไม่มีค่า eGFR จะยังคัดกรองไม่ได้" })
+      .min(0, { error: "eGFR ต้องไม่ติดลบ" }).max(200, { error: "ตรวจสอบค่า eGFR อีกครั้ง" })),
   egfrDate: z.string().optional().refine((v) => !v || isValidThaiDob(v), { error: "วันที่ผล eGFR ไม่ถูกต้อง" }),
   doseMgDay: z.coerce.number({ error: "กรอกขนาดยา" }).int({ error: "กรอกเป็นจำนวนเต็ม" }).gt(0, { error: "ขนาดยาต้องมากกว่า 0" }).max(5000, { error: "ตรวจสอบขนาดยาอีกครั้ง" }),
   drinksAlcohol: yesNo, // checklist 9.1
@@ -44,6 +49,8 @@ const ScreenSchema = z.object({
 // screeningId = null → new screening; a number → edit that (unconfirmed) screening.
 export async function saveScreening(patientId: number, screeningId: number | null, _prev: ScreenState, formData: FormData): Promise<ScreenState> {
   const user = await requireFacilityStaff();
+  // A NEW screening waits until every open case of this unit is closed (src/lib/open-cases.ts).
+  if (screeningId === null && (await countOpenCases(user.facility))) redirect("/patients?blocked=1");
 
   const patient = await db.patient.findFirst({ where: { id: patientId, facility: user.facility, active: true } });
   if (!patient) return { errors: { form: ["ไม่พบผู้ป่วย"] } };
