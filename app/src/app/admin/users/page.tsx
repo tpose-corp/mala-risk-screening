@@ -12,6 +12,7 @@ import { thaiDate, thaiDateTime } from "@/lib/format";
 import { requireAdmin } from "@/lib/session";
 import { UsersManager, type UserRow } from "./user-forms";
 
+import { PageAids } from "@/components/ui/page-aids";
 // "14:05 น." (the date goes on its own line so the table stays narrow)
 const timeOf = (d: Date) => thaiDateTime(d).slice(thaiDate(d).length).trim();
 const STATUS: Record<string, { label: string; where: Prisma.UserWhereInput }> = {
@@ -69,6 +70,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
               </FilterGroup>
             </CompactSearch>
           } />
+        <PageAids />
       </main>
     </>
   );

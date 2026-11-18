@@ -12,6 +12,7 @@ import { ageFromThaiDob, formatCardId, thaiDate, thaiDateTime } from "@/lib/form
 import { changeText, trendsOf } from "@/lib/history";
 import { requireHospital } from "@/lib/session";
 
+import { PageAids } from "@/components/ui/page-aids";
 export default async function PatientHistoryPage({ params, searchParams }: PageProps<"/hospital/patients/[id]">) {
   const user = await requireHospital();
   const id = Number((await params).id);
@@ -142,6 +143,7 @@ export default async function PatientHistoryPage({ params, searchParams }: PageP
             </table>
           </div>
         </Card>
+        <PageAids />
       </main>
     </>
   );

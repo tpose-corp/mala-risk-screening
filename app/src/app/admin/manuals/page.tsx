@@ -8,6 +8,7 @@ import { MANUAL_AUDIENCES, MANUAL_MAX_MB, fmtSize } from "@/lib/manuals";
 import { requireAdmin } from "@/lib/session";
 import { ManualCell, ResultModal } from "./manual-cell";
 
+import { PageAids } from "@/components/ui/page-aids";
 const ERR: Record<string, string> = {
   missing: "กรุณาเลือกไฟล์", type: "รองรับเฉพาะไฟล์ PDF", size: `ไฟล์ใหญ่เกิน ${MANUAL_MAX_MB} MB`, audience: "ไม่พบกลุ่มผู้ใช้นี้",
 };
@@ -52,6 +53,7 @@ export default async function AdminManualsPage({ searchParams }: PageProps<"/adm
         </section>
         <p className="ui-hint">รับเฉพาะไฟล์ PDF ไม่เกิน {MANUAL_MAX_MB} MB ต่อไฟล์ เปลี่ยนไฟล์ได้ตลอด ไฟล์เดิมจะถูกเก็บไว้ ถ้ายังไม่ได้อัปโหลด ผู้ใช้กลุ่มนั้นจะไม่เห็นปุ่มคู่มือ</p>
         {result && <ResultModal ok={result.ok} message={result.message} />}
+        <PageAids />
       </main>
     </>
   );

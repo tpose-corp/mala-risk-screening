@@ -22,6 +22,7 @@ import { safeBack } from "@/lib/back-link";
 import { requireAdmin } from "@/lib/session";
 import { amendScreening, setPatientActive, updatePatient, verifyPatient } from "../actions";
 
+import { PageAids } from "@/components/ui/page-aids";
 const MSG: Record<string, string> = {
   verified: "ยืนยันตัวตนผู้ป่วยแล้ว", saved: "บันทึกแล้ว", nochange: "ไม่มีข้อมูลที่เปลี่ยน",
   reason: "กรุณากรอกเหตุผลที่แก้ไข", hn: "HN ใช้ได้เฉพาะตัวเลข คั่นด้วย - หรือ / ยาวไม่เกิน 15 ตัว", phone: "เบอร์โทรต้องขึ้นต้นด้วย 0 และมี 9 หลัก (บ้าน) หรือ 10 หลัก (มือถือ)", hndup: "HN นี้เป็นของผู้ป่วยคนอื่นแล้ว",
@@ -211,6 +212,7 @@ export default async function AdminPatient({ params, searchParams }: PageProps<"
               },
             ]} />
         </div>
+        <PageAids />
       </main>
     </>
   );

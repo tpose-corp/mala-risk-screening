@@ -13,6 +13,7 @@ import { num, periodStart } from "@/lib/paging";
 import { requireAdmin } from "@/lib/session";
 import { getSettings } from "@/lib/settings";
 
+import { PageAids } from "@/components/ui/page-aids";
 const hoursAgo = (h: number) => new Date(Date.now() - h * 60 * 60 * 1000);
 // "วันนี้" / "เมื่อวาน" / "5 วันก่อน"
 const ago = (d: Date) => {
@@ -173,6 +174,7 @@ export default async function AdminHome() {
             {warnings.length === 0 && <li className="ov-muted">ไม่มีเหตุการณ์ที่ต้องสังเกต</li>}
           </ul>
         </section>
+        <PageAids />
       </main>
     </>
   );

@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/session";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/settings";
 import { SettingsForm } from "./settings-form";
 
+import { PageAids } from "@/components/ui/page-aids";
 export default async function SettingsPage({ searchParams }: PageProps<"/admin/settings">) {
   await requireAdmin();
   const sp = await searchParams;
@@ -29,6 +30,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/admin/s
         {/* key: after a save the form starts again from what is now stored */}
         <SettingsForm key={last?.updatedAt.toISOString() ?? "default"} saved={s} defaults={DEFAULT_SETTINGS}
           accounts={{ pcu: count("pcu"), clinician: count("clinician"), admin: count("admin") }} />
+        <PageAids />
       </main>
     </>
   );
