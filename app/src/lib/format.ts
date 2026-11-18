@@ -57,9 +57,10 @@ export function ageFromThaiDob(dob: string, today = new Date()): number | null {
 //   hn 15        the HN format is the hospital's own (current data: 8 to 10 digits, some with
 //                "-" or "/"); 15 leaves room. To confirm with the hospital's IT (open question)
 //   phone        Thai numbers (NBTC numbering plan): landline 9 digits, mobile 10, both start with 0
-//   licenseNo 20 e.g. "ว.12345" (doctor) or a 10-digit nursing licence
+//   licenseNo 10 digits only: the nursing council's licence number is 10 digits, the medical
+//                council's is shorter (the "ว." / "พ." prefix is not typed)
 //   position 60
-export const LIMITS = { name: 100, hn: 15, phone: 12, licenseNo: 20, position: 60 } as const;
+export const LIMITS = { name: 100, hn: 15, phone: 12, licenseNo: 10, position: 60 } as const;
 
 // A person's name: Thai or English letters, spaces, and "." (for titles like "น.ส."). No digits.
 const NAME_RE = /^[฀-๿a-zA-Z.\s]+$/;
@@ -113,12 +114,13 @@ export const typePhone = (raw: string) => {
   return d.length >= 9 ? formatPhone(d) : d.length > 6 ? `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}` : d.length > 3 ? `${d.slice(0, 3)}-${d.slice(3)}` : d;
 };
 
-// Professional licence no.: letters (e.g. "ว."), digits, ".", "-", spaces.
+// Professional licence no.: digits only (Thai digits typed on a Thai keyboard become 0 to 9).
+export const typeLicenseNo = (raw: string) => raw.replace(/[๐-๙]/g, (d) => String(THAI_DIGITS.indexOf(d))).replace(/\D/g, "").slice(0, LIMITS.licenseNo);
 export function licenseNoProblem(v: string): string | null {
   const t = v.trim();
   if (t === "") return null;
-  if (!/^[฀-๿a-zA-Z0-9.\-\s]+$/.test(t)) return "ใช้ได้เฉพาะตัวอักษร ตัวเลข จุด และขีด";
-  if (t.length > LIMITS.licenseNo) return `ยาวเกิน ${LIMITS.licenseNo} ตัวอักษร`;
+  if (!/^\d+$/.test(t)) return "เลขใบประกอบวิชาชีพใช้ได้เฉพาะตัวเลข";
+  if (t.length > LIMITS.licenseNo) return `ยาวเกิน ${LIMITS.licenseNo} หลัก`;
   return null;
 }
 
